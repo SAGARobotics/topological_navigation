@@ -101,10 +101,7 @@ class TopologicalNavLoc(object):
         self.throttle = self.throttle_val
         self.node="Unknown"
         self.wpstr="Unknown"
-        self.closest_dist = 10e5-1
         self.cnstr="Unknown"
-        self.closest_edge_ids = []
-        self.closest_edge_dists = []
         self.node_poses = {}
         
         # TODO: remove Temporary arg until tags functionality is MongoDB independent
@@ -112,9 +109,9 @@ class TopologicalNavLoc(object):
 
         self.subscribers=[]
         self.wp_pub = rospy.Publisher('closest_node', String, latch=True, queue_size=1)
-        self.wd_pub = rospy.Publisher('closest_node_distance', Float32, latch=True, queue_size=1)
+        self.wd_pub = rospy.Publisher('closest_node_distance', Float32, latch=False, queue_size=10)
         self.cn_pub = rospy.Publisher('current_node', String, latch=True, queue_size=1)
-        self.ce_pub = rospy.Publisher('closest_edges', ClosestEdges, latch=True, queue_size=1)
+        self.ce_pub = rospy.Publisher('closest_edges', ClosestEdges, latch=False, queue_size=10)
 
         self.force_check = True
         self.rec_map = False
@@ -278,31 +275,24 @@ class TopologicalNavLoc(object):
             msg.edge_ids = closest_edge_ids
             msg.distances = closest_edge_dists
             self.ce_pub.publish(msg)
-            
+
         if len(set(closest_edge_dists)) == 1:
             closest_edge_ids.sort()
         
         if self.only_latched :
             if self.wpstr != wpstr:
                 self.wp_pub.publish(wpstr)
-            if self.closest_dist != closest_dist:
-                self.wd_pub.publish(closest_dist)
             if self.cnstr != cnstr:
                 self.cn_pub.publish(cnstr)
-            if self.closest_edge_ids != closest_edge_ids \
-                or self.closest_edge_dists != closest_edge_dists:
-                pub_closest_edges(closest_edge_ids, closest_edge_dists)
         else:
             self.wp_pub.publish(wpstr)
-            self.wd_pub.publish(closest_dist)
             self.cn_pub.publish(cnstr)
-            pub_closest_edges(closest_edge_ids, closest_edge_dists)
+
+        self.wd_pub.publish(closest_dist)
+        pub_closest_edges(closest_edge_ids, closest_edge_dists)
             
         self.wpstr = wpstr
-        self.closest_dist = closest_dist
         self.cnstr = cnstr
-        self.closest_edge_ids = closest_edge_ids
-        self.closest_edge_dists = closest_edge_dists
         
 
     def MapCallback(self, msg):
