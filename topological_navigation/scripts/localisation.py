@@ -109,7 +109,7 @@ class TopologicalNavLoc(object):
 
         self.subscribers=[]
         self.wp_pub = rospy.Publisher('closest_node', String, latch=True, queue_size=1)
-        self.wd_pub = rospy.Publisher('closest_node_distance', Float32, latch=False, queue_size=1)
+        self.wd_pub = rospy.Publisher('closest_node_distance', Float32, latch=False, queue_size=10)
         self.cn_pub = rospy.Publisher('current_node', String, latch=True, queue_size=1)
         self.ce_pub = rospy.Publisher('closest_edges', ClosestEdges, latch=False, queue_size=10)
 
