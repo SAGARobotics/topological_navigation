@@ -25,7 +25,7 @@
   <arg name="base_frame" default="base_link" />
   <!-- Localisation publishes at max 10 hz. Lower the rate to every Nth message. -->
   <arg name="N" default="3" />
-  <!-- If true localisation publishes only when the closest node/edge changes, and when the current node changes. -->
+  <!-- If true localisation publishes the closest/current node only when they change. -->
   <arg name="only_latched" default="true" />
   <!-- If true then a node tagged as 'no_go' can be the closest node ONLY when the robot is within it. -->
   <arg name="localisation_with_tags" default="true" />
