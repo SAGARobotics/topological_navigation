@@ -1010,6 +1010,7 @@ class TopologicalNavServer(object):
         
         if status != self.prev_status:
             d = {}
+            d["origin"] = self.edge_action_manager.origin_node["node"]["name"]
             d["goal"] = self.edge_action_manager.destination_node["node"]["name"]
             d["final_goal"] = self.final_goal
             d["action"] = self.edge_action_manager.current_action.upper()
