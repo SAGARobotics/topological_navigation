@@ -300,6 +300,7 @@ class TopologicalNavServer(object):
             self.cancelled = False
             self.preempted = False
             self.final_goal = False
+            self.next_action = "none"
             self.no_orientation = goal.no_orientation
             self.executing_fail_policy = {}
             
@@ -333,6 +334,7 @@ class TopologicalNavServer(object):
             self.cancelled = False
             self.preempted = False
             self.final_goal = False
+            self.next_action = "none"
             
             self.max_dist_to_closest_edge = rospy.get_param("~max_dist_to_closest_edge", 1.0)
             
@@ -967,8 +969,8 @@ class TopologicalNavServer(object):
                 inc = 1
                 return result, inc
 
-        
-        self.edge_action_manager.initialise(edge, destination_node, origin_node)
+
+        self.edge_action_manager.initialise(edge, destination_node, origin_node, self.next_action)
         self.edge_action_manager.execute()
         
         status = self.edge_action_manager.client.get_state()

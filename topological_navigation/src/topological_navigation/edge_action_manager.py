@@ -58,14 +58,16 @@ class EdgeActionManager(object):
         
         self.client = None        
         self.current_action = "none"
+        self.next_action = "none"
         self.dt = dict_tools()
         
     
-    def initialise(self, edge, destination_node, origin_node=None):
+    def initialise(self, edge, destination_node, origin_node=None, next_action="none"):
         
         self.edge = yaml.safe_load(json.dumps(edge)) # no unicode in edge
         self.destination_node = destination_node
         self.origin_node = origin_node
+        self.next_action = next_action
         
         rospy.loginfo("Edge Action Manager: Processing edge {}".format(self.edge["edge_id"]))
         
@@ -113,6 +115,9 @@ class EdgeActionManager(object):
                 elif value.startswith("+") and self.origin_node is not None:
                     _property = self.dt.getFromDict(self.origin_node, value[1:].split("."))
                     goal_args = self.dt.setInDict(goal_args, item["keys"], _property)
+
+        if "continue_action" in goal_args:
+            goal_args["continue_action"]["data"] = True if self.action_name == self.next_action else False
 
         self.goal = message_converter.convert_dictionary_to_ros_message(action_type, goal_args)
         
