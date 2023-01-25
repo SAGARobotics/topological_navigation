@@ -578,14 +578,13 @@ class TopologicalNavServer(object):
             rospy.loginfo("Navigating Case 2: Getting to the exact pose of target {}".format(g_node["node"]["name"]))
             self.final_goal = True
             self.current_target = g_node["node"]["name"]
-            origin_name,target_name = get_node_names_from_edge_id_2(self.lnodes, the_edge["edge_id"])
+
+            origin_name, target_name = get_node_names_from_edge_id_2(self.lnodes, the_edge["edge_id"])
             edge_origin_node = self.rsearch.get_node_from_tmap2(origin_name)
             edge_target_node = self.rsearch.get_node_from_tmap2(target_name)
 
-            if g_node["node"]["name"] == target_name:
-                origin_node = edge_origin_node
-            else:
-                origin_node = edge_target_node
+            # stop row traversal and row change breaking if the target and origin nodes have the same pose
+            origin_node = edge_origin_node if g_node["node"]["name"] == target_name else edge_target_node
 
             self.edge_reconf_start(the_edge)
             result, inc = self.execute_action(the_edge, g_node, origin_node)
