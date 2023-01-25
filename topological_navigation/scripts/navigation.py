@@ -300,6 +300,7 @@ class TopologicalNavServer(object):
             self.cancelled = False
             self.preempted = False
             self.final_goal = False
+            self.next_action = "none"
             self.no_orientation = goal.no_orientation
             self.executing_fail_policy = {}
             
@@ -333,6 +334,7 @@ class TopologicalNavServer(object):
             self.cancelled = False
             self.preempted = False
             self.final_goal = False
+            self.next_action = "none"
             
             self.max_dist_to_closest_edge = rospy.get_param("~max_dist_to_closest_edge", 1.0)
             
@@ -576,8 +578,13 @@ class TopologicalNavServer(object):
             rospy.loginfo("Navigating Case 2: Getting to the exact pose of target {}".format(g_node["node"]["name"]))
             self.final_goal = True
             self.current_target = g_node["node"]["name"]
-            origin_name,_ = get_node_names_from_edge_id_2(self.lnodes, the_edge["edge_id"])
-            origin_node = self.rsearch.get_node_from_tmap2(origin_name)
+
+            origin_name, target_name = get_node_names_from_edge_id_2(self.lnodes, the_edge["edge_id"])
+            edge_origin_node = self.rsearch.get_node_from_tmap2(origin_name)
+            edge_target_node = self.rsearch.get_node_from_tmap2(target_name)
+
+            # stop row traversal and row change breaking if the target and origin nodes have the same pose
+            origin_node = edge_origin_node if g_node["node"]["name"] == target_name else edge_target_node
 
             self.edge_reconf_start(the_edge)
             result, inc = self.execute_action(the_edge, g_node, origin_node)
@@ -967,8 +974,8 @@ class TopologicalNavServer(object):
                 inc = 1
                 return result, inc
 
-        
-        self.edge_action_manager.initialise(edge, destination_node, origin_node)
+
+        self.edge_action_manager.initialise(edge, destination_node, origin_node, self.next_action)
         self.edge_action_manager.execute()
         
         status = self.edge_action_manager.client.get_state()
@@ -1010,6 +1017,10 @@ class TopologicalNavServer(object):
         
         if status != self.prev_status:
             d = {}
+            origin_node = self.edge_action_manager.origin_node
+            origin_name = origin_node["node"]["name"] if origin_node is not None else "none"
+            
+            d["origin"] = origin_name
             d["goal"] = self.edge_action_manager.destination_node["node"]["name"]
             d["final_goal"] = self.final_goal
             d["action"] = self.edge_action_manager.current_action.upper()
