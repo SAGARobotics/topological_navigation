@@ -135,6 +135,7 @@ class TopoMap2Vis(object):
                     idn += 1
         
         if not self.no_goto:
+            rospy.sleep(0.5)
             for i in self.topological_map['nodes']:
                 self.create_goto_marker(i['node'])
 
@@ -162,7 +163,7 @@ class TopoMap2Vis(object):
 
         control.markers.append(self.makeArrow( marker.scale ))
         marker.controls.append(control)
-    
+
         self._goto_server.insert(marker, self.goto_feedback_cb)
         self._goto_server.applyChanges()
 
