@@ -67,6 +67,7 @@ class TopologicalNavServer(object):
         self.stat = None
         self.no_orientation = False
         self._target = "None"
+        self._route_nodes = []
         self.current_target = "none"
         self.current_action = "none"
         self.next_action = "none"
@@ -288,6 +289,7 @@ class TopologicalNavServer(object):
         print("\n####################################################################################################")
         rospy.loginfo("Processing GO-TO-NODE goal (No Orientation = {})".format(goal.no_orientation))
         can_start = False
+        self._route_nodes = []
 
         with self.navigation_lock:
             if self.cancel_current_action(timeout_secs=10):
@@ -322,6 +324,7 @@ class TopologicalNavServer(object):
         print("\n####################################################################################################")
         rospy.loginfo("Processing EXECUTE POLICY MODE goal")
         can_start = False
+        self._route_nodes = []
 
         with self.navigation_lock:
             if self.cancel_current_action(timeout_secs=10):
@@ -350,6 +353,8 @@ class TopologicalNavServer(object):
                 final_edge = get_edge_from_id_tmap2(self.lnodes, route.source[-1], route.edge_id[-1])
                 target = final_edge["node"]
                 route = self.enforce_navigable_route(route, target)
+                self._route_nodes.extend(route.source)
+                self._route_nodes.append(target)
                 result = self.execute_policy(route, target)
             else:
                 result = False
@@ -417,6 +422,12 @@ class TopologicalNavServer(object):
                         rospy.loginfo("Intermediate node reached: %s", self.current_node)
                         self.goal_reached = True
 
+                    if self._route_nodes and self.current_node not in self._route_nodes:
+                        rospy.logerr("Current node {} is not in the route of nodes {}".format(self.current_node, self._route_nodes))
+                        with self.navigation_lock:
+                            self.preempted = True
+                            self.cancel_current_action(timeout_secs=2)
+
 
     def navigate(self, target):
         """
@@ -448,6 +459,8 @@ class TopologicalNavServer(object):
                     route = self.rsearch.search_route(o_node["node"]["name"], target)
                     route = self.enforce_navigable_route(route, target)
                     if route.source:
+                        self._route_nodes.extend(route.source)
+                        self._route_nodes.append(target)
                         rospy.loginfo("Navigating Case 1: Following route")
                         self.publish_route(route, target)
                         result, inc = self.followRoute(route, target, 0)
@@ -458,7 +471,8 @@ class TopologicalNavServer(object):
                         result = False
                         inc = 1
                         rospy.loginfo("Navigating Case 1a -> res: %d", inc)
-                else:      
+                else:
+                    self._route_nodes.append(target)      
                     if self.nav_from_closest_edge:
                         result, inc = self.to_goal_node(g_node, the_edge)
                     else:
@@ -690,7 +704,7 @@ class TopologicalNavServer(object):
                 
 
         while rindex < (len(route.edge_id)) and not self.cancelled and (nav_ok or recovering):
-            
+
             cedg = get_edge_from_id_tmap2(self.lnodes, route.source[rindex], route.edge_id[rindex])
             a = cedg["action"]
             
@@ -762,7 +776,7 @@ class TopologicalNavServer(object):
 
             if nav_ok:
                 self.stat.status = "success"
-                rospy.loginfo("Navigation Finished on %s (%d/%d)" % (dt_text, operation_time, time_to_wp))
+                rospy.loginfo("Navigation Finished Successfully on %s (%d/%d)" % (dt_text, operation_time, time_to_wp))
             else:
                 if not_fatal:
                     rospy.logwarn("Navigation Failed on %s (%d/%d)" % (dt_text, operation_time, time_to_wp))
@@ -899,7 +913,6 @@ class TopologicalNavServer(object):
         # this means the action is aborted -> execute the fail policy
         # make sure that if the goal is cancelled by the client we don't enter here
         if not nav_ok and not self.preempted:
-            rospy.loginfo("\t>> route: {}".format(route))
             route_updated = False
             while not route_updated:
                 policy, state = self.get_fail_policy_state(edge)
@@ -934,13 +947,14 @@ class TopologicalNavServer(object):
                         route_updated = True
                         recovering = True
                         replanned = True
+
+                        rospy.loginfo("\t>> new route: {}".format(new_route))
                 else:
                     # clean the current fail policy data
                     self.executing_fail_policy = {}
                     recovering = False
                     replanned = False
 
-            rospy.loginfo("\t>> new route: {}".format(new_route))
         return nav_ok, inc, recovering, new_route, replanned
     
 
