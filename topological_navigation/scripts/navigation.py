@@ -423,7 +423,7 @@ class TopologicalNavServer(object):
                         self.goal_reached = True
 
                     if self._route_nodes and self.current_node not in self._route_nodes:
-                        rospy.logerr("Current node {} is not in the route of nodes {}".format(self.current_node, self._route_nodes))
+                        rospy.logwarn("Current node {} is not in the route. Cancelling navigation.".format(self.current_node))
                         with self.navigation_lock:
                             self.preempted = True
                             self.cancel_current_action(timeout_secs=2)
