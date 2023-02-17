@@ -111,8 +111,6 @@ class TopologicalNavServer(object):
         while not self._map_received:
             rospy.sleep(rospy.Duration.from_sec(0.05))
         rospy.loginfo("Navigation received the Topological Map")
-        
-        self.edge_action_manager = EdgeActionManager()
 
         self.edge_reconfigure = rospy.get_param("~reconfigure_edges", True)
         self.srv_edge_reconfigure = rospy.get_param("~reconfigure_edges_srv", False)
@@ -245,6 +243,7 @@ class TopologicalNavServer(object):
         self.rsearch = TopologicalRouteSearch2(self.lnodes)
         self.route_checker = RouteChecker(self.lnodes)
         self.make_move_base_edge()
+        self.edge_action_manager = EdgeActionManager(self.lnodes)
 
         self._map_received = True
 

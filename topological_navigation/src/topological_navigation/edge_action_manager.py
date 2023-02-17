@@ -18,6 +18,11 @@ def _import(location, name):
     return getattr(mod, name) 
 
 
+class attributes(object):
+    def __init__(self):
+        pass
+
+
 class dict_tools(object):
                 
                 
@@ -54,14 +59,31 @@ class dict_tools(object):
 class EdgeActionManager(object):
     
     
-    def __init__(self):
+    def __init__(self, topomap):
         
+        self.topomap = topomap
         self.client = None        
         self.current_action = "none"
         self.next_action = "none"
         self.dt = dict_tools()
-        
-    
+
+        self.plugins = {}
+        for node in self.topomap["nodes"]:
+            for edge in node["node"]["edges"]:
+                if edge["action_type"] not in self.plugins:
+                    self.import_plugin(edge)
+
+
+    def import_plugin(self, edge):
+
+        package, name = edge["action_type"].split("/")
+        try:
+            func = _import("{}.{}".format(package, name), name)
+            self.plugins[edge["action_type"]] = func
+        except:
+            pass
+
+
     def initialise(self, edge, destination_node, origin_node=None, next_action="none"):
         
         self.edge = yaml.safe_load(json.dumps(edge)) # no unicode in edge
@@ -87,8 +109,13 @@ class EdgeActionManager(object):
         self.client = actionlib.SimpleActionClient(self.action_name, action)        
         self.client.wait_for_server()
         
-        rospy.loginfo("Edge Action Manager: Constructing the goal")
-        self.construct_goal(action_type, copy.deepcopy(self.edge["goal"]))
+        if action_type in self.plugins:
+            rospy.loginfo("Edge Action Manager: Constructing the goal from the plugin")
+            func = self.plugins[action_type]
+            self.goal = func(action_type, self.get_attributes())
+        else:
+            rospy.loginfo("Edge Action Manager: Constructing the goal from the map")
+            self.construct_goal(action_type, copy.deepcopy(self.edge["goal"]))
         
         
     def preempt(self):
@@ -97,6 +124,13 @@ class EdgeActionManager(object):
             status = self.client.get_state()
             if status == GoalStatus.PENDING or status == GoalStatus.ACTIVE:
                 self.client.cancel_all_goals()
+
+
+    def get_attributes(self):    
+        attrs = attributes()
+        for attribute, value in self.__dict__.items():
+            setattr(attrs, attribute, value)
+        return attrs
         
         
     def construct_goal(self, action_type, goal_args):
