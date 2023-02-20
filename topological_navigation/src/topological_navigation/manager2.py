@@ -53,6 +53,9 @@ class map_manager_2(object):
         with open(mb_goal_f, "r") as f:
             self.move_base_goal = yaml.safe_load(f)["topological_navigation/move_base_goal"]
         
+        self.tmap2 = {}
+        self.tmap2["nodes"] = []
+
         if advertise_srvs:
             self.advertise()
         
