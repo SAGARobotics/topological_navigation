@@ -37,6 +37,9 @@ class map_manager_2(object):
     
     
     def __init__(self, advertise_srvs=True):
+
+        self.advertise_srvs = advertise_srvs
+        self.advertised = False
         
         self.cache_maps = rospy.get_param("~cache_topological_maps", False)
         self.auto_write = rospy.get_param("~auto_write_topological_maps", False)
@@ -55,9 +58,6 @@ class map_manager_2(object):
         
         self.tmap2 = {}
         self.tmap2["nodes"] = []
-
-        if advertise_srvs:
-            self.advertise()
         
     
     def advertise(self):
@@ -100,6 +100,8 @@ class map_manager_2(object):
         self.add_edges_srv=rospy.Service('/topological_map_manager2/add_edges_between_nodes_multi', topological_navigation_msgs.srv.AddEdgeArray, self.add_edges_cb)
         self.add_params_to_edges_srv=rospy.Service('/topological_map_manager2/add_param_to_edge_config_multi', topological_navigation_msgs.srv.UpdateEdgeConfigArray, self.add_params_to_edges_cb)
         self.set_influence_zones_srv=rospy.Service('/topological_map_manager2/set_node_influence_zone_multi', topological_navigation_msgs.srv.SetInfluenceZoneArray, self.set_influence_zones_cb)
+
+        self.advertised = True
 
     
     def init_map(self, name="new_map", metric_map="map_2d", pointset="new_map", transformation="default", filename="", load=True):
@@ -157,6 +159,9 @@ class map_manager_2(object):
             self.points_pub = rospy.Publisher('/topological_map', topological_navigation_msgs.msg.TopologicalMap, latch=True, queue_size=1)
             self.tmap2_to_tmap()
             self.points_pub.publish(self.points)
+
+        if self.advertise_srvs and not self.advertised:
+            self.advertise()
         
         
     def get_time(self):
