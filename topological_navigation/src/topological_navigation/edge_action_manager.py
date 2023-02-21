@@ -71,15 +71,15 @@ class EdgeActionManager(object):
         for node in self.topomap["nodes"]:
             for edge in node["node"]["edges"]:
                 if edge["action_type"] not in self.plugins:
-                    self.import_plugin(edge)
+                    self.import_plugin(edge["action_type"])
 
 
-    def import_plugin(self, edge):
+    def import_plugin(self, action_type):
 
-        package, name = edge["action_type"].split("/")
+        package, name = action_type.split("/")
         try:
             func = _import("{}.{}".format(package, name), name)
-            self.plugins[edge["action_type"]] = func
+            self.plugins[action_type] = func
         except:
             pass
 

@@ -55,53 +55,6 @@ class map_manager_2(object):
         mb_goal_f = "{}/config/{}".format(rospkg.RosPack().get_path("topological_navigation"), "move_base_goal.yaml")
         with open(mb_goal_f, "r") as f:
             self.move_base_goal = yaml.safe_load(f)["topological_navigation/move_base_goal"]
-        
-        self.tmap2 = {}
-        self.tmap2["nodes"] = []
-        
-    
-    def advertise(self):
-        
-        # Services that retrieve information from the map
-        self.get_map_srv=rospy.Service('/topological_map_manager2/get_topological_map', Trigger, self.get_topological_map_cb)
-        self.get_tagged_srv=rospy.Service('/topological_map_manager2/get_tagged_nodes', topological_navigation_msgs.srv.GetTaggedNodes, self.get_tagged_cb)       
-        self.get_tag_srv=rospy.Service('/topological_map_manager2/get_tags', topological_navigation_msgs.srv.GetTags, self.get_tags_cb)
-        self.get_node_tag_srv=rospy.Service('/topological_map_manager2/get_node_tags', topological_navigation_msgs.srv.GetNodeTags, self.get_node_tags_cb)
-        self.get_node_edges_srv=rospy.Service('/topological_map_manager2/get_edges_between_nodes', topological_navigation_msgs.srv.GetEdgesBetweenNodes, self.get_edges_between_cb)
-
-        # Services that modify the map
-        self.write_map_srv=rospy.Service('/topological_map_manager2/write_topological_map', topological_navigation_msgs.srv.WriteTopologicalMap, self.write_topological_map_cb)
-        self.switch_map_srv=rospy.Service('/topological_map_manager2/switch_topological_map', topological_navigation_msgs.srv.WriteTopologicalMap, self.switch_topological_map_cb)
-        self.add_node_srv=rospy.Service('/topological_map_manager2/add_topological_node', topological_navigation_msgs.srv.AddNode, self.add_topological_node_cb)
-        self.remove_node_srv=rospy.Service('/topological_map_manager2/remove_topological_node', topological_navigation_msgs.srv.RmvNode, self.remove_node_cb)
-        self.add_edges_srv=rospy.Service('/topological_map_manager2/add_edges_between_nodes', topological_navigation_msgs.srv.AddEdge, self.add_edge_cb)
-        self.remove_edge_srv=rospy.Service('/topological_map_manager2/remove_edge', topological_navigation_msgs.srv.AddEdge, self.remove_edge_cb)
-        self.add_content_to_node_srv=rospy.Service('/topological_map_manager2/add_content_to_node', topological_navigation_msgs.srv.AddContent, self.add_content_cb)
-        self.update_node_name_srv = rospy.Service("/topological_map_manager2/update_node_name", topological_navigation_msgs.srv.UpdateNodeName, self.update_node_name_cb)
-        self.update_node_waypoint_srv = rospy.Service("/topological_map_manager2/update_node_pose", topological_navigation_msgs.srv.AddNode, self.update_node_waypoint_cb)
-        self.update_node_tolerance_srv = rospy.Service("/topological_map_manager2/update_node_tolerance", topological_navigation_msgs.srv.UpdateNodeTolerance, self.update_node_tolerance_cb)
-        self.modify_tag_srv=rospy.Service('/topological_map_manager2/modify_node_tags', topological_navigation_msgs.srv.ModifyTag, self.modify_tag_cb)
-        self.add_tag_srv=rospy.Service('/topological_map_manager2/add_tag_to_node', topological_navigation_msgs.srv.AddTag, self.add_tag_cb)
-        self.rm_tag_srv=rospy.Service('/topological_map_manager2/rm_tag_from_node', topological_navigation_msgs.srv.AddTag, self.rm_tag_cb)        
-        self.add_param_to_edge_config_srv=rospy.Service('/topological_map_manager2/add_param_to_edge_config', topological_navigation_msgs.srv.UpdateEdgeConfig, self.add_param_to_edge_config_cb)
-        self.rm_param_from_edge_config_srv=rospy.Service('/topological_map_manager2/rm_param_from_edge_config', topological_navigation_msgs.srv.UpdateEdgeConfig, self.rm_param_from_edge_config_cb)
-        self.rm_param_from_topological_map_srv=rospy.Service('/topological_map_manager2/rm_param_from_topological_map', topological_navigation_msgs.srv.UpdateEdgeConfig, self.rm_param_from_topological_map_cb)
-        self.update_node_restrictions_srv=rospy.Service('/topological_map_manager2/update_node_restrictions', topological_navigation_msgs.srv.UpdateRestrictions, self.update_node_restrictions_cb)
-        self.update_edge_restrictions_srv=rospy.Service('/topological_map_manager2/update_edge_restrictions', topological_navigation_msgs.srv.UpdateRestrictions, self.update_edge_restrictions_cb)
-        self.update_edge_srv=rospy.Service('/topological_map_manager2/update_edge', topological_navigation_msgs.srv.UpdateEdge, self.update_edge_cb)
-        self.update_action_srv=rospy.Service('/topological_map_manager2/update_action', topological_navigation_msgs.srv.UpdateAction, self.update_action_cb)
-        self.add_datum_srv=rospy.Service('/topological_map_manager2/add_datum', topological_navigation_msgs.srv.AddDatum, self.add_datum_cb)
-        self.update_fail_policy_srv=rospy.Service('/topological_map_manager2/update_fail_policy', topological_navigation_msgs.srv.UpdateFailPolicy, self.update_fail_policy_cb)
-        self.set_influence_zone_srv=rospy.Service('/topological_map_manager2/set_node_influence_zone', topological_navigation_msgs.srv.SetInfluenceZone, self.set_influence_zone_cb)
-        self.clear_nodes_srv=rospy.Service('/topological_map_manager2/clear_topological_nodes', Empty, self.clear_nodes_cb)
-        
-        # Services for modifying the map quickly
-        self.add_nodes_srv=rospy.Service('/topological_map_manager2/add_topological_node_multi', topological_navigation_msgs.srv.AddNodeArray, self.add_topological_nodes_cb)
-        self.add_edges_srv=rospy.Service('/topological_map_manager2/add_edges_between_nodes_multi', topological_navigation_msgs.srv.AddEdgeArray, self.add_edges_cb)
-        self.add_params_to_edges_srv=rospy.Service('/topological_map_manager2/add_param_to_edge_config_multi', topological_navigation_msgs.srv.UpdateEdgeConfigArray, self.add_params_to_edges_cb)
-        self.set_influence_zones_srv=rospy.Service('/topological_map_manager2/set_node_influence_zone_multi', topological_navigation_msgs.srv.SetInfluenceZoneArray, self.set_influence_zones_cb)
-
-        self.advertised = True
 
     
     def init_map(self, name="new_map", metric_map="map_2d", pointset="new_map", transformation="default", filename="", load=True):
@@ -162,6 +115,50 @@ class map_manager_2(object):
 
         if self.advertise_srvs and not self.advertised:
             self.advertise()
+
+
+    def advertise(self):
+        
+        # Services that retrieve information from the map
+        self.get_map_srv=rospy.Service('/topological_map_manager2/get_topological_map', Trigger, self.get_topological_map_cb)
+        self.get_tagged_srv=rospy.Service('/topological_map_manager2/get_tagged_nodes', topological_navigation_msgs.srv.GetTaggedNodes, self.get_tagged_cb)       
+        self.get_tag_srv=rospy.Service('/topological_map_manager2/get_tags', topological_navigation_msgs.srv.GetTags, self.get_tags_cb)
+        self.get_node_tag_srv=rospy.Service('/topological_map_manager2/get_node_tags', topological_navigation_msgs.srv.GetNodeTags, self.get_node_tags_cb)
+        self.get_node_edges_srv=rospy.Service('/topological_map_manager2/get_edges_between_nodes', topological_navigation_msgs.srv.GetEdgesBetweenNodes, self.get_edges_between_cb)
+
+        # Services that modify the map
+        self.write_map_srv=rospy.Service('/topological_map_manager2/write_topological_map', topological_navigation_msgs.srv.WriteTopologicalMap, self.write_topological_map_cb)
+        self.switch_map_srv=rospy.Service('/topological_map_manager2/switch_topological_map', topological_navigation_msgs.srv.WriteTopologicalMap, self.switch_topological_map_cb)
+        self.add_node_srv=rospy.Service('/topological_map_manager2/add_topological_node', topological_navigation_msgs.srv.AddNode, self.add_topological_node_cb)
+        self.remove_node_srv=rospy.Service('/topological_map_manager2/remove_topological_node', topological_navigation_msgs.srv.RmvNode, self.remove_node_cb)
+        self.add_edges_srv=rospy.Service('/topological_map_manager2/add_edges_between_nodes', topological_navigation_msgs.srv.AddEdge, self.add_edge_cb)
+        self.remove_edge_srv=rospy.Service('/topological_map_manager2/remove_edge', topological_navigation_msgs.srv.AddEdge, self.remove_edge_cb)
+        self.add_content_to_node_srv=rospy.Service('/topological_map_manager2/add_content_to_node', topological_navigation_msgs.srv.AddContent, self.add_content_cb)
+        self.update_node_name_srv = rospy.Service("/topological_map_manager2/update_node_name", topological_navigation_msgs.srv.UpdateNodeName, self.update_node_name_cb)
+        self.update_node_waypoint_srv = rospy.Service("/topological_map_manager2/update_node_pose", topological_navigation_msgs.srv.AddNode, self.update_node_waypoint_cb)
+        self.update_node_tolerance_srv = rospy.Service("/topological_map_manager2/update_node_tolerance", topological_navigation_msgs.srv.UpdateNodeTolerance, self.update_node_tolerance_cb)
+        self.modify_tag_srv=rospy.Service('/topological_map_manager2/modify_node_tags', topological_navigation_msgs.srv.ModifyTag, self.modify_tag_cb)
+        self.add_tag_srv=rospy.Service('/topological_map_manager2/add_tag_to_node', topological_navigation_msgs.srv.AddTag, self.add_tag_cb)
+        self.rm_tag_srv=rospy.Service('/topological_map_manager2/rm_tag_from_node', topological_navigation_msgs.srv.AddTag, self.rm_tag_cb)        
+        self.add_param_to_edge_config_srv=rospy.Service('/topological_map_manager2/add_param_to_edge_config', topological_navigation_msgs.srv.UpdateEdgeConfig, self.add_param_to_edge_config_cb)
+        self.rm_param_from_edge_config_srv=rospy.Service('/topological_map_manager2/rm_param_from_edge_config', topological_navigation_msgs.srv.UpdateEdgeConfig, self.rm_param_from_edge_config_cb)
+        self.rm_param_from_topological_map_srv=rospy.Service('/topological_map_manager2/rm_param_from_topological_map', topological_navigation_msgs.srv.UpdateEdgeConfig, self.rm_param_from_topological_map_cb)
+        self.update_node_restrictions_srv=rospy.Service('/topological_map_manager2/update_node_restrictions', topological_navigation_msgs.srv.UpdateRestrictions, self.update_node_restrictions_cb)
+        self.update_edge_restrictions_srv=rospy.Service('/topological_map_manager2/update_edge_restrictions', topological_navigation_msgs.srv.UpdateRestrictions, self.update_edge_restrictions_cb)
+        self.update_edge_srv=rospy.Service('/topological_map_manager2/update_edge', topological_navigation_msgs.srv.UpdateEdge, self.update_edge_cb)
+        self.update_action_srv=rospy.Service('/topological_map_manager2/update_action', topological_navigation_msgs.srv.UpdateAction, self.update_action_cb)
+        self.add_datum_srv=rospy.Service('/topological_map_manager2/add_datum', topological_navigation_msgs.srv.AddDatum, self.add_datum_cb)
+        self.update_fail_policy_srv=rospy.Service('/topological_map_manager2/update_fail_policy', topological_navigation_msgs.srv.UpdateFailPolicy, self.update_fail_policy_cb)
+        self.set_influence_zone_srv=rospy.Service('/topological_map_manager2/set_node_influence_zone', topological_navigation_msgs.srv.SetInfluenceZone, self.set_influence_zone_cb)
+        self.clear_nodes_srv=rospy.Service('/topological_map_manager2/clear_topological_nodes', Empty, self.clear_nodes_cb)
+        
+        # Services for modifying the map quickly
+        self.add_nodes_srv=rospy.Service('/topological_map_manager2/add_topological_node_multi', topological_navigation_msgs.srv.AddNodeArray, self.add_topological_nodes_cb)
+        self.add_edges_srv=rospy.Service('/topological_map_manager2/add_edges_between_nodes_multi', topological_navigation_msgs.srv.AddEdgeArray, self.add_edges_cb)
+        self.add_params_to_edges_srv=rospy.Service('/topological_map_manager2/add_param_to_edge_config_multi', topological_navigation_msgs.srv.UpdateEdgeConfigArray, self.add_params_to_edges_cb)
+        self.set_influence_zones_srv=rospy.Service('/topological_map_manager2/set_node_influence_zone_multi', topological_navigation_msgs.srv.SetInfluenceZoneArray, self.set_influence_zones_cb)
+
+        self.advertised = True
         
         
     def get_time(self):
