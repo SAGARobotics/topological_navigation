@@ -147,8 +147,10 @@ class TopologicalNavServer(object):
         # this keeps the runtime state of the fail policies that are currently in execution 
         self.executing_fail_policy = {}
 
-        # to check if the robot reached the final goal 
-        self.goal_timer = rospy.Timer(rospy.Duration(0.1), self.goal_callback)
+        # If True then toponav goals always complete when the robot reaches the goal tolerance even when the action does not complete
+        self.action_indepedent_goals = rospy.get_param("~action_indepedent_goals", False)
+        if self.action_indepedent_goals: 
+            self.goal_timer = rospy.Timer(rospy.Duration(0.1), self.goal_callback)
         
         # Creating Action Server for navigation
         rospy.loginfo("Creating GO-TO-NODE action server...")

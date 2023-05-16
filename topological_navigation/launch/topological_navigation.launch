@@ -50,6 +50,8 @@
   <arg name="edge_reconfigure_config" default="$(find topological_navigation/config/sample_edge_reconfig_groups.yaml"/>
   <!-- If we are using the restricted tmap rather than the normal tmap. Must first publish the restriction e.g. robot type: rostopic pub /type std_msgs/String "data: $ROBOT_TYPE" -->
   <arg name="use_restrictions" default="false"/>
+  <!-- If True then toponav goals always complete when the robot reaches the goal tolerance even when the action does not complete -->
+  <arg name="action_indepedent_goals" default="false"/>
 
   <arg name="launch_extras" default="false" />
 
@@ -89,6 +91,7 @@
     <param name="max_dist_to_closest_edge" value="$(arg max_dist_to_closest_edge)"/>
     <param name="reconfigure_edges" value="$(arg reconfigure_edges)"/>
     <param name="reconfigure_edges_srv" value="$(arg reconfigure_edges_srv)"/>
+    <param name="action_indepedent_goals" value="$(arg action_indepedent_goals)"/>
     <rosparam param="move_base_actions" subst_value="True">$(arg move_base_actions)</rosparam>
 
     <remap from="/topological_map_2" to="/restricted_topological_map_2"  if="$(arg use_restrictions)"/>
