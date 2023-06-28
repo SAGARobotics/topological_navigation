@@ -9,7 +9,7 @@ from topological_navigation_msgs.msg import CurrentEdge
 from topological_navigation_msgs.msg import ClosestEdges
 from topological_navigation_msgs.srv import EvaluateEdge, EvaluateEdgeRequest, EvaluateNode, EvaluateNodeRequest
 
-from std_msgs.msg import String
+from std_msgs.msg import String, Float32
 from actionlib_msgs.msg import GoalStatus
 
 from topological_navigation.route_search2 import RouteChecker, TopologicalRouteSearch2, get_route_distance
@@ -67,6 +67,8 @@ class TopologicalNavServer(object):
         self.stat = None
         self.no_orientation = False
         self._target = "None"
+        self._target_obj = None
+        self.goal_timer = None
         self._route_nodes = []
         self.current_target = "none"
         self.current_action = "none"
@@ -122,6 +124,7 @@ class TopologicalNavServer(object):
         rospy.loginfo("Subscribing to Localisation Topics...")
         rospy.wait_for_message('closest_edges', ClosestEdges, timeout=10)
         rospy.Subscriber("closest_node", String, self.closestNodeCallback)
+        rospy.Subscriber('closest_node_distance', Float32, self.closestNodeDistCallback)
         rospy.Subscriber("closest_edges", ClosestEdges, self.closestEdgesCallback)
         rospy.Subscriber("current_node", String, self.currentNodeCallback)
         rospy.loginfo("...done")
@@ -143,6 +146,11 @@ class TopologicalNavServer(object):
 
         # this keeps the runtime state of the fail policies that are currently in execution 
         self.executing_fail_policy = {}
+
+        # If True then toponav goals always complete when the robot reaches the goal tolerance even when the action does not complete
+        self.action_indepedent_goals = rospy.get_param("~action_indepedent_goals", False)
+        if self.action_indepedent_goals: 
+            self.goal_timer = rospy.Timer(rospy.Duration(0.1), self.goal_callback)
         
         # Creating Action Server for navigation
         rospy.loginfo("Creating GO-TO-NODE action server...")
@@ -307,6 +315,8 @@ class TopologicalNavServer(object):
             
             self._feedback.route = "Starting..."
             self._as.publish_feedback(self._feedback)
+            self._target = goal.target
+            self._target_obj = self.rsearch.get_node_from_tmap2(goal.target)
             self.navigate(goal.target)
 
         else:
@@ -350,11 +360,12 @@ class TopologicalNavServer(object):
             
             if valid_route and (route.source[0] == self.current_node or route.source[0] == self.closest_node):
                 final_edge = get_edge_from_id_tmap2(self.lnodes, route.source[-1], route.edge_id[-1])
-                target = final_edge["node"]
-                route = self.enforce_navigable_route(route, target)
+                self._target = final_edge["node"]
+                self._target_obj = self.rsearch.get_node_from_tmap2(self._target)
+                route = self.enforce_navigable_route(route, self._target)
                 self._route_nodes.extend(route.source)
-                self._route_nodes.append(target)
-                result = self.execute_policy(route, target)
+                self._route_nodes.append(self._target)
+                result = self.execute_policy(route, self._target)
             else:
                 result = False
                 self.cancelled = True
@@ -397,6 +408,10 @@ class TopologicalNavServer(object):
         self.closest_node = msg.data
 
 
+    def closestNodeDistCallback(self, msg):
+        self.closest_node_dist = msg.data
+
+
     def closestEdgesCallback(self, msg):
         self.closest_edges = msg
 
@@ -426,6 +441,13 @@ class TopologicalNavServer(object):
                         with self.navigation_lock:
                             self.preempted = True
                             self.cancel_current_action(timeout_secs=2)
+
+
+    def goal_callback(self, event=None):
+
+        if self.navigation_activated and self.current_node == self._target:
+            if self._target_obj is not None and self.closest_node_dist <= self._target_obj["node"]["properties"]["xy_goal_tolerance"]:
+                self.goal_reached = True
 
 
     def navigate(self, target):
@@ -470,8 +492,7 @@ class TopologicalNavServer(object):
                         result = False
                         inc = 1
                         rospy.loginfo("Navigating Case 1a -> res: %d", inc)
-                else:
-                    self._route_nodes.append(target)      
+                else:      
                     if self.nav_from_closest_edge:
                         result, inc = self.to_goal_node(g_node, the_edge)
                     else:
