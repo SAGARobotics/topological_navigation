@@ -266,7 +266,7 @@ class TopologicalNavServer(object):
         move_base_goal = rospy.get_param("~move_base_goal", {})
         if self.move_base_name in self.goals:
             move_base_goal["action_type"] = self.goals[self.move_base_name]["action_type"]
-            move_base_goal["goal"] = {} # if self.goals exists then the plugin exists
+            move_base_goal["goal"] = {} # if move_base_name is in self.goals then the plugin exists
 
         if not move_base_goal:
             for node in self.lnodes["nodes"]:
