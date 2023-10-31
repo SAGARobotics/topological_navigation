@@ -54,8 +54,16 @@ class TopologicalRouteSearch2(object):
         if origin == "none" or target == "none" or origin == target:
             return route
 
-        goal = self.get_node_from_tmap2(target)
         orig = self.get_node_from_tmap2(origin)
+        if orig is None:
+            rospy.logerr("Topological Route Search: Origin node {} does not exist in the topological map".format(origin))
+            return route
+        
+        goal = self.get_node_from_tmap2(target)
+        if goal is None:
+            rospy.logerr("Topological Route Search: Target node {} does not exist in the topological map".format(target))
+            return route
+
         to_expand=[]
         children=[]
         expanded=[]
