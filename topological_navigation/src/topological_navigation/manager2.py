@@ -154,6 +154,7 @@ class map_manager_2(object):
         
         # Services for modifying the map quickly
         self.add_nodes_srv=rospy.Service('/topological_map_manager2/add_topological_node_multi', topological_navigation_msgs.srv.AddNodeArray, self.add_topological_nodes_cb)
+        self.update_node_waypoints_srv = rospy.Service("/topological_map_manager2/update_node_pose_multi", topological_navigation_msgs.srv.AddNodeArray, self.update_node_waypoints_cb)
         self.add_edges_srv=rospy.Service('/topological_map_manager2/add_edges_between_nodes_multi', topological_navigation_msgs.srv.AddEdgeArray, self.add_edges_cb)
         self.add_params_to_edges_srv=rospy.Service('/topological_map_manager2/add_param_to_edge_config_multi', topological_navigation_msgs.srv.UpdateEdgeConfigArray, self.add_params_to_edges_cb)
         self.set_influence_zones_srv=rospy.Service('/topological_map_manager2/set_node_influence_zone_multi', topological_navigation_msgs.srv.SetInfluenceZoneArray, self.set_influence_zones_cb)
@@ -1290,6 +1291,27 @@ class map_manager_2(object):
 
         for item in data:
             success = self.add_topological_node(item.name, item.pose, add_close_nodes=False, update=False, write_map=False)
+            if not success:
+                return False
+
+        if update:
+            self.update()
+        if self.auto_write and write_map:
+            self.write_topological_map(self.filename)
+        return True
+    
+
+    def update_node_waypoints_cb(self, req):
+        """
+        Move a list of nodes in the topological map
+        """
+        return self.update_node_waypoints(req.data)
+    
+
+    def update_node_waypoints(self, data, update=True, write_map=True):
+
+        for item in data:
+            success = self.update_node_waypoint(item.name, item.pose, update=False, write_map=False)
             if not success:
                 return False
 
