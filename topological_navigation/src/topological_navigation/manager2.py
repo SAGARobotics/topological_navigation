@@ -95,6 +95,7 @@ class map_manager_2(object):
             self.tmap2["transformation"] = self.transformation
             self.tmap2["meta"] = {}
             self.tmap2["meta"]["last_updated"] = self.get_time()
+            self.tmap2["meta"]["version"] = rospy.get_param("~default_version", "0.1")
             self.tmap2["nodes"] = []            
             rospy.set_param('topological_map2_name', self.pointset)
             rospy.set_param('topological_map2_filename', os.path.split(self.filename)[1])
@@ -151,6 +152,7 @@ class map_manager_2(object):
         self.update_fail_policy_srv=rospy.Service('/topological_map_manager2/update_fail_policy', topological_navigation_msgs.srv.UpdateFailPolicy, self.update_fail_policy_cb)
         self.set_influence_zone_srv=rospy.Service('/topological_map_manager2/set_node_influence_zone', topological_navigation_msgs.srv.SetInfluenceZone, self.set_influence_zone_cb)
         self.clear_nodes_srv=rospy.Service('/topological_map_manager2/clear_topological_nodes', Empty, self.clear_nodes_cb)
+        self.set_version_srv=rospy.Service('/topological_map_manager2/set_version', topological_navigation_msgs.srv.SetVersion, self.set_version_cb)
         
         # Services for modifying the map quickly
         self.add_nodes_srv=rospy.Service('/topological_map_manager2/add_topological_node_multi', topological_navigation_msgs.srv.AddNodeArray, self.add_topological_nodes_cb)
@@ -1383,7 +1385,28 @@ class map_manager_2(object):
         if self.auto_write and write_map:
             self.write_topological_map(self.filename)
         return True
+    
+
+    def set_version_cb(self, req):
+        """
+        Set topological map version in meta info
+        """
+        try:
+            if "meta" in self.tmap2:
+                self.tmap2["meta"]["version"] = req.version
+            else:
+                self.tmap2["meta"] = {}
+                self.tmap2["meta"]["version"] = req.version
+
+        except Exception as err:
+            rospy.logerr("Could not update topological map version: {}".format(err))
+            return False
         
+        self.update()
+        if self.auto_write:
+            self.write_topological_map(self.filename)
+        return True
+
 
     def get_instances_of_node(self, node_name):
         
