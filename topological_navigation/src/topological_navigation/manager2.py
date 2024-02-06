@@ -126,6 +126,7 @@ class map_manager_2(object):
         self.get_tag_srv=rospy.Service('/topological_map_manager2/get_tags', topological_navigation_msgs.srv.GetTags, self.get_tags_cb)
         self.get_node_tag_srv=rospy.Service('/topological_map_manager2/get_node_tags', topological_navigation_msgs.srv.GetNodeTags, self.get_node_tags_cb)
         self.get_node_edges_srv=rospy.Service('/topological_map_manager2/get_edges_between_nodes', topological_navigation_msgs.srv.GetEdgesBetweenNodes, self.get_edges_between_cb)
+        self.get_version_srv=rospy.Service('/topological_map_manager2/get_version', Trigger, self.get_version_cb)
 
         # Services that modify the map
         self.write_map_srv=rospy.Service('/topological_map_manager2/write_topological_map', topological_navigation_msgs.srv.WriteTopologicalMap, self.write_topological_map_cb)
@@ -376,6 +377,21 @@ class map_manager_2(object):
                          ba.append(edge["edge_id"])
                          
          return ab, ba
+    
+
+    def get_version_cb(self, req):
+        """
+        get topological map version from meta info
+        """
+        ans = TriggerResponse()
+        if "meta" in self.tmap2 and "version" in self.tmap2["meta"]:
+            ans.success = True
+            ans.message = str(self.tmap2["meta"]["version"])
+        else:
+            rospy.logerr("Version not found in topological map meta information")
+            ans.success = False
+        
+        return ans
     
     
     def write_topological_map_cb(self, req):
