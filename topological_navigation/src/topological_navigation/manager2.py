@@ -93,13 +93,12 @@ class map_manager_2(object):
             self.tmap2["metric_map"] = self.metric_map
             self.tmap2["pointset"] = self.pointset
             self.tmap2["transformation"] = self.transformation
-            self.tmap2["meta"] = {}
-            self.tmap2["meta"]["last_updated"] = self.get_time()
-            self.tmap2["meta"]["version"] = rospy.get_param("~default_version", "0.1")
             self.tmap2["nodes"] = []            
             rospy.set_param('topological_map2_name', self.pointset)
             rospy.set_param('topological_map2_filename', os.path.split(self.filename)[1])
             rospy.set_param('topological_map2_path', os.path.split(self.filename)[0])
+
+        self.set_meta()
 
         self.map_pub = rospy.Publisher('/topological_map_2', std_msgs.msg.String, latch=True, queue_size=1) 
         self.map_pub.publish(std_msgs.msg.String(json.dumps(self.tmap2)))
@@ -118,6 +117,45 @@ class map_manager_2(object):
             self.advertise()
 
 
+    def set_meta(self):
+
+        if "meta" not in self.tmap2:
+            self.tmap2["meta"] = {}
+
+        if "_other" not in self.tmap2["meta"]:
+            self.tmap2["meta"]["_other"] = {}
+
+        if "last_updated" not in self.tmap2["meta"]:
+            self.tmap2["meta"]["last_updated"] = self.get_time()
+
+        if "version" not in self.tmap2["meta"]:
+            self.tmap2["meta"]["version"] = rospy.get_param("~default_version", "0.1")
+
+        datum_latitude, datum_longitude = self.get_datum()
+
+        if "datum_latitude" not in self.tmap2["meta"] and datum_latitude:
+            self.tmap2["meta"]["datum_latitude"] = datum_latitude
+
+        if "datum_longitude" not in self.tmap2["meta"] and datum_longitude:
+            self.tmap2["meta"]["datum_longitude"] = datum_longitude
+        
+
+    def get_datum(self):
+
+        path = rospy.get_param('topological_map2_path')
+        try:
+            with open(path + "/datum.yaml", "r") as f:
+                datum = yaml.safe_load(f)
+                datum_latitude = datum["datum_latitude"]
+                datum_longitude = datum["datum_longitude"]
+        except Exception as err:
+            rospy.logwarn("Could not get datum from topological_map2_path {}. Exception is {}".format(path, err))
+            datum_latitude = None
+            datum_longitude = None
+
+        return datum_latitude, datum_longitude
+
+        
     def advertise(self):
         
         # Services that retrieve information from the map
