@@ -131,18 +131,21 @@ class map_manager_2(object):
         if "version" not in self.tmap2["meta"]:
             self.tmap2["meta"]["version"] = rospy.get_param("~default_version", "0.1")
 
-        datum_latitude, datum_longitude = self.get_datum()
+        self.insert_datum(rospy.get_param('topological_map2_path'))
 
-        if "datum_latitude" not in self.tmap2["meta"] and datum_latitude:
-            self.tmap2["meta"]["datum_latitude"] = datum_latitude
 
-        if "datum_longitude" not in self.tmap2["meta"] and datum_longitude:
-            self.tmap2["meta"]["datum_longitude"] = datum_longitude
+    def insert_datum(self, path_to_datum):
+
+        if "datum_latitude" not in self.tmap2["meta"] or "datum_longitude" not in self.tmap2["meta"]:
+            datum_latitude, datum_longitude = self.get_datum(path_to_datum)
+
+            if datum_latitude and datum_longitude:
+                self.tmap2["meta"]["datum_latitude"] = datum_latitude
+                self.tmap2["meta"]["datum_longitude"] = datum_longitude
         
 
-    def get_datum(self):
+    def get_datum(self, path):
 
-        path = rospy.get_param('topological_map2_path')
         try:
             with open(path + "/datum.yaml", "r") as f:
                 datum = yaml.safe_load(f)
@@ -204,7 +207,7 @@ class map_manager_2(object):
         
         
     def get_time(self):
-        return datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        return datetime.datetime.utcnow().strftime('%Y_%m_%dT%H:%M:%S+00:00')
 
 
     def load_map(self, filename):
@@ -269,6 +272,8 @@ class map_manager_2(object):
     def write_topological_map(self, filename, no_alias=False):
         
         rospy.loginfo("Writing map to {} ...".format(filename))
+
+        self.insert_datum(os.path.split(filename)[0])
         
         nodes = copy.deepcopy(self.tmap2["nodes"])
         nodes.sort(key=lambda node: node["node"]["name"])
