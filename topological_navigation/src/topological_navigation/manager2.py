@@ -7,9 +7,10 @@ Created on Tue Sep 29 16:06:36 2020
 #########################################################################################################
 from __future__ import division
 import rospy, tf2_ros, math
-import yaml, datetime, json
+import yaml, json
 import re, uuid, copy, os
 import multiprocessing, rospkg
+from datetime import datetime, timezone
 
 from topological_navigation_msgs.msg import *
 import topological_navigation_msgs.srv
@@ -207,7 +208,7 @@ class map_manager_2(object):
         
         
     def get_time(self):
-        return datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S+00:00')
+        return datetime.now(timezone.utc).isoformat()
 
 
     def load_map(self, filename):
