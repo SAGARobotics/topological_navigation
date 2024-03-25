@@ -207,7 +207,7 @@ class map_manager_2(object):
         
         
     def get_time(self):
-        return datetime.datetime.utcnow().strftime('%Y_%m_%dT%H:%M:%S+00:00')
+        return datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S+00:00')
 
 
     def load_map(self, filename):
