@@ -108,7 +108,7 @@ class map_manager_2(object):
         self.broadcaster = tf2_ros.StaticTransformBroadcaster()
         self.broadcast_transform()
         
-        self.convert_to_legacy = rospy.get_param("~convert_to_legacy", True)
+        self.convert_to_legacy = rospy.get_param("~convert_to_legacy", False)
         if self.tmap2 and self.convert_to_legacy:
             self.points_pub = rospy.Publisher('/topological_map', topological_navigation_msgs.msg.TopologicalMap, latch=True, queue_size=1)
             self.tmap2_to_tmap()
