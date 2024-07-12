@@ -94,8 +94,8 @@ class NavigationClient(Node):
 
     def initialize(self):
         self.topmap_sub = self.create_subscription(String, '/topological_map_2', self.topmap_sub_callback, 1)
-        self.closest_node_sub = self.create_subscription(String, 'closest_node', self.closest_node_callback, 1)
-        self.current_node_sub = self.create_subscription(String, 'current_node', self.current_node_callback, 1)
+        self.closest_node_sub = self.create_subscription(String, '/closest_node', self.closest_node_callback, 1)
+        self.current_node_sub = self.create_subscription(String, '/current_node', self.current_node_callback, 1)
 
         self.ros_spin_thread = Thread(target=lambda node: rclpy.spin(node), args=(self,))
         self.ros_spin_thread.start()
