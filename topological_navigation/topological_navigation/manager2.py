@@ -44,15 +44,16 @@ class NoAliasDumper(yaml.SafeDumper):
 # for float-type [x,y,z,w] keys.
 class CustomSafeLoader(yaml.SafeLoader):
     def construct_mapping(self, node, deep=False):
-        # Call the parent class's construct_mapping method
         mapping = super().construct_mapping(node, deep=deep)
 
-        # Iterate over the keys and convert as needed
+        # this can be extended to test the validity of the tmap2 
+        # as well at load time (or add missing keys)
         for key in ['x', 'y', 'z', 'w']:
             if key in mapping and isinstance(mapping[key], int):
                 mapping[key] = float(mapping[key])
         
         return mapping
+
 
 #########################################################################################################
 class map_manager_2(rclpy.node.Node):
