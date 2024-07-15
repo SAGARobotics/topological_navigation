@@ -2,7 +2,7 @@ name: ros CI
 
 on:
   push:
-    branches: [ humble-dev ]
+    branches: [ humble-dev, yaml-safe-load ]
   pull_request:
     branches: [ humble-dev ]
 
