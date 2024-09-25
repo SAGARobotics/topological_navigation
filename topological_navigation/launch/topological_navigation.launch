@@ -8,9 +8,11 @@
   <!-- Filename of the topological map. -->
   <arg name="file" default=""/>
   <!-- Cache the topological map in `.ros/topological_maps` when loading in map manager 2. -->
-  <arg name="cache_topological_maps" default="true"/>
+  <arg name="cache_topological_maps" default="false"/>
   <!-- Automatically save changes to the topological map after a service call. -->
-  <arg name="auto_write_topological_maps" default="true"/>
+  <arg name="auto_write_topological_maps" default="false"/>
+    <!-- If False then there should be a plugin for all actions in the topomap. -->
+  <arg name="set_goal_in_topological_maps" default="false"/>
   <!-- Pointset of the topological map (its name in the mongo database). --> 	
   <arg name="pointset" default=""/> 
   <!-- If false load a tmap2 using the map manager 2, else load a tmap using the legacy map manager. -->

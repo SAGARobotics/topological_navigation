@@ -269,7 +269,7 @@ class TopologicalNavServer(object):
                 for edge in node["node"]["edges"]:
                     if edge["action"] == self.move_base_name:
                         move_base_goal["action_type"] = edge["action_type"]
-                        move_base_goal["goal"] = edge["goal"]
+                        move_base_goal["goal"] = edge["goal"] if "goal" in edge else {}
                         break
                 else:
                     continue
