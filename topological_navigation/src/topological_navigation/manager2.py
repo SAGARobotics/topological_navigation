@@ -44,9 +44,11 @@ class map_manager_2(object):
         
         self.cache_maps = rospy.get_param("~cache_topological_maps", False)
         self.auto_write = rospy.get_param("~auto_write_topological_maps", False)
+        self.set_goal_in_tmap = rospy.get_param("set_goal_in_topological_maps", False)
 
         rospy.loginfo("cache_topological_maps: {}".format(self.cache_maps))
         rospy.loginfo("auto_write_topological_maps: {}".format(self.auto_write))
+        rospy.loginfo("set_goal_in_topological_maps: {}".format(self.set_goal_in_tmap))
 
         self.cache_dir = os.path.join(os.path.expanduser("~"), ".ros", "topological_maps")     
         if not os.path.exists(self.cache_dir):
@@ -636,10 +638,16 @@ class map_manager_2(object):
         if not action_type:
             action_type = "move_base_msgs/MoveBaseGoal"
         
-        the_action_type, the_goal = self.set_goal(action, action_type, goal)
+        if self.set_goal_in_tmap or action_type == "move_base_msgs/MoveBaseGoal":
+            the_action_type, the_goal = self.set_goal(action, action_type, goal)
+        else:
+            the_action_type = action_type
+            the_goal = None
         
         edge["action_type"] = the_action_type
-        edge["goal"] = the_goal
+
+        if the_goal:
+            edge["goal"] = the_goal
         
         edge["fail_policy"] = fail_policy
         edge["restrictions_planning"] = restrictions_planning
