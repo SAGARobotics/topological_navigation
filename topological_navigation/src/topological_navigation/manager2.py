@@ -173,6 +173,7 @@ class map_manager_2(object):
         # Services that modify the map
         self.write_map_srv=rospy.Service('/topological_map_manager2/write_topological_map', topological_navigation_msgs.srv.WriteTopologicalMap, self.write_topological_map_cb)
         self.switch_map_srv=rospy.Service('/topological_map_manager2/switch_topological_map', topological_navigation_msgs.srv.WriteTopologicalMap, self.switch_topological_map_cb)
+        self.reload_map_srv=rospy.Service('/topological_map_manager2/reload_topological_map', Trigger, self.reload_topological_map_cb)
         self.add_node_srv=rospy.Service('/topological_map_manager2/add_topological_node', topological_navigation_msgs.srv.AddNode, self.add_topological_node_cb)
         self.remove_node_srv=rospy.Service('/topological_map_manager2/remove_topological_node', topological_navigation_msgs.srv.RmvNode, self.remove_node_cb)
         self.add_edges_srv=rospy.Service('/topological_map_manager2/add_edges_between_nodes', topological_navigation_msgs.srv.AddEdge, self.add_edge_cb)
@@ -355,6 +356,20 @@ class map_manager_2(object):
         self.broadcast_transform()
 
         return True, json.dumps(self.tmap2)
+    
+    def reload_topological_map_cb(self, req):
+        """
+        Reload the topological map
+        """       
+        self.load_map(self.filename)        
+        self.update(False)
+        self.broadcast_transform()
+
+        ans = TriggerResponse()
+        ans.success = True
+        ans.message = "Topomap reloaded from file"
+
+        return ans
     
     
     def get_tagged_cb(self, req):
