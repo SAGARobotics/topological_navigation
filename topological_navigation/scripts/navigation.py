@@ -103,6 +103,7 @@ class TopologicalNavServer(object):
         self.stats_pub = rospy.Publisher("topological_navigation/Statistics", NavStatistics, queue_size=10)
         self.edge_pub = rospy.Publisher("topological_navigation/Edge", CurrentEdge, queue_size=10)
         self.route_pub = rospy.Publisher("topological_navigation/Route", topological_navigation_msgs.msg.TopologicalRoute, queue_size=10)
+        self.route_remaining_pub = rospy.Publisher("topological_navigation/route_remaining", topological_navigation_msgs.msg.TopologicalRoute, queue_size=10)
         self.cur_edge = rospy.Publisher("current_edge", String, queue_size=10)
         self.move_act_pub = rospy.Publisher("topological_navigation/move_action_status", String, latch=True, queue_size=1)
 
@@ -725,6 +726,11 @@ class TopologicalNavServer(object):
 
         while rindex < (len(route.edge_id)) and not self.cancelled and (nav_ok or recovering):
 
+            try:
+                self.publish_remaining_route(route.source[rindex:], target)
+            except:
+                pass
+
             cedg = get_edge_from_id_tmap2(self.lnodes, route.source[rindex], route.edge_id[rindex])
             a = cedg["action"]
             
@@ -870,6 +876,14 @@ class TopologicalNavServer(object):
             stroute.nodes.append(i)
         stroute.nodes.append(target)
         self.route_pub.publish(stroute)
+
+
+    def publish_remaining_route(self, route_nodes, target):
+        stroute = topological_navigation_msgs.msg.TopologicalRoute()
+        for i in route_nodes:
+            stroute.nodes.append(i)
+        stroute.nodes.append(target)
+        self.route_remaining_pub.publish(stroute)
         
         
     def publish_stats(self):
