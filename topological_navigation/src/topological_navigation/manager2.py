@@ -63,6 +63,7 @@ class map_manager_2(object):
         self.name = name
         self.metric_map = metric_map
         self.pointset = pointset
+        self.last_node = None
         
         if transformation == "default":
             self.transformation = {}
@@ -477,10 +478,10 @@ class map_manager_2(object):
         """
         Adds a node to the topological map
         """
-        return self.add_topological_node(req.name, req.pose, req.add_close_nodes)
+        return self.add_topological_node(req.name, req.pose, req.add_close_nodes, req.add_previous_node, req.action, req.action_type)
         
         
-    def add_topological_node(self, node_name, node_pose, add_close_nodes, dist=8.0, update=True, write_map=True):
+    def add_topological_node(self, node_name, node_pose, add_close_nodes, add_previous_node, action, action_type, dist=8.0, update=True, write_map=True):
         
         if node_name:
             name = node_name
@@ -491,7 +492,7 @@ class map_manager_2(object):
 
         if name in self.names:
             rospy.logerr("Node {} already exists, try another name".format(name))
-            return False
+            return False, ""
         
         pose = message_converter.convert_ros_message_to_dictionary(node_pose)
         close_nodes = []
@@ -503,17 +504,33 @@ class map_manager_2(object):
                         close_nodes.append(node["node"]["name"])
                         
         self.add_node(name, pose)
+
+        if not action:
+            action = "move_base"
+
+        if not action_type:
+            action_type = "move_base_msgs/MoveBaseGoal"
         
         for close_node in close_nodes:
-            self.add_edge(name, close_node, "move_base", "", update=False, write_map=False)
-            self.add_edge(close_node, name, "move_base", "", update=False, write_map=False)
+            edge_id_1 = name + "_" + close_node
+            edge_id_2 = close_node + "_" + name
+            self.add_edge(name, close_node, action, action_type, edge_id_1, update=False, write_map=False)
+            self.add_edge(close_node, name, action, action_type, edge_id_2, update=False, write_map=False)
+
+        if add_previous_node and self.last_node is not None:
+            edge_id_1 = name + "_" + self.last_node
+            edge_id_2 = self.last_node + "_" + name
+            self.add_edge(name, self.last_node, action, action_type, edge_id_1, update=False, write_map=False)
+            self.add_edge(self.last_node, name, action, action_type, edge_id_2, update=False, write_map=False)
+
+        self.last_node = name
 
         if update:
             self.update()
         if self.auto_write and write_map:
             self.write_topological_map(self.filename)
 
-        return True
+        return True, name
     
     
     def get_new_name(self):
@@ -1350,6 +1367,7 @@ class map_manager_2(object):
     def clear_nodes(self, update=True, write_map=True):
 
         self.tmap2["nodes"] = []
+        self.last_node = None
 
         if update:
             self.update()
