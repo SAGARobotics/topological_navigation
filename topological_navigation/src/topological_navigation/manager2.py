@@ -478,10 +478,10 @@ class map_manager_2(object):
         """
         Adds a node to the topological map
         """
-        return self.add_topological_node(req.name, req.pose, req.add_close_nodes, req.add_previous_node, req.action, req.action_type)
+        return self.add_topological_node(req.name, req.pose, req.add_close_nodes, req.add_previous_node, req.action, req.action_type, req.one_way)
         
         
-    def add_topological_node(self, node_name, node_pose, add_close_nodes, add_previous_node, action, action_type, dist=8.0, update=True, write_map=True):
+    def add_topological_node(self, node_name, node_pose, add_close_nodes, add_previous_node, action, action_type, one_way, dist=8.0, update=True, write_map=True):
         
         if node_name:
             name = node_name
@@ -520,7 +520,8 @@ class map_manager_2(object):
         if add_previous_node and self.last_node is not None:
             edge_id_1 = name + "_" + self.last_node
             edge_id_2 = self.last_node + "_" + name
-            self.add_edge(name, self.last_node, action, action_type, edge_id_1, update=False, write_map=False)
+            if not one_way:
+                self.add_edge(name, self.last_node, action, action_type, edge_id_1, update=False, write_map=False)
             self.add_edge(self.last_node, name, action, action_type, edge_id_2, update=False, write_map=False)
 
         self.last_node = name
