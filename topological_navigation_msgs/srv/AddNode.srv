@@ -6,3 +6,4 @@ string action          # action of edges connecting this node to close nodes and
 string action_type     # action type of edges connecting this node to close nodes and previous added node (default move_base_msgs/MoveBaseGoal)
 ---
 bool success
+string message         # node name
