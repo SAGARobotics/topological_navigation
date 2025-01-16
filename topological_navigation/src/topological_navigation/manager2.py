@@ -1367,6 +1367,7 @@ class map_manager_2(object):
     def clear_nodes(self, update=True, write_map=True):
 
         self.tmap2["nodes"] = []
+        self.last_node = None
 
         if update:
             self.update()
