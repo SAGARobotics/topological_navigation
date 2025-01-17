@@ -883,10 +883,10 @@ class map_manager_2(object):
                 self.update()
             if self.auto_write and write_map:
                 self.write_topological_map(self.filename)
-            return True
+            return True, ""
         else:
             rospy.logerr("Error updating the pose of node {}. {} instances of node with name {} found".format(name, num_available, name))
-            return False
+            return False, ""
         
         
     def update_node_tolerance_cb(self, req):
