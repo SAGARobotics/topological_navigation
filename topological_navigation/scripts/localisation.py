@@ -4,7 +4,7 @@ import sys, json, numpy as np
 import rospy, rostopic, tf
 import topological_navigation_msgs.srv
 
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, PoseStamped
 from std_msgs.msg import String, Float32
 from topological_navigation_msgs.msg import ClosestEdges
 
@@ -12,6 +12,7 @@ from topological_navigation.tmap_utils import *
 from topological_navigation.point2line import pnt2line
 
 from threading import Thread
+from rospy_message_converter import message_converter
 
 
 class LocaliseByTopicSubscriber(object):
@@ -108,10 +109,11 @@ class TopologicalNavLoc(object):
         self.with_tags = wtags
 
         self.subscribers=[]
-        self.wp_pub = rospy.Publisher('closest_node', String, latch=True, queue_size=1)
-        self.wd_pub = rospy.Publisher('closest_node_distance', Float32, latch=False, queue_size=10)
-        self.cn_pub = rospy.Publisher('current_node', String, latch=True, queue_size=1)
-        self.ce_pub = rospy.Publisher('closest_edges', ClosestEdges, latch=False, queue_size=10)
+        self.wp_pub    = rospy.Publisher('closest_node', String, latch=True, queue_size=1)
+        self.wd_pub    = rospy.Publisher('closest_node_distance', Float32, latch=False, queue_size=10)
+        self.wpose_pub = rospy.Publisher('closest_node_pose', PoseStamped, latch=True, queue_size=10)
+        self.cn_pub    = rospy.Publisher('current_node', String, latch=True, queue_size=1)
+        self.ce_pub    = rospy.Publisher('closest_edges', ClosestEdges, latch=False, queue_size=10)
 
         self.force_check = True
         self.rec_map = False
@@ -253,7 +255,8 @@ class TopologicalNavLoc(object):
                 
                 # distance to physically closest node.
                 closest_dist = np.round(self.distances[0]["dist"], 3)
-                self.publishTopics(closeststr, closest_dist, currentstr, closest_edges, list(np.round(edge_dists, 3)))
+                closest_pose = self.distances[0]["node"]["node"]["pose"]
+                self.publishTopics(closeststr, closest_dist, closest_pose, currentstr, closest_edges, list(np.round(edge_dists, 3)))
                 self.throttle=1
             else:
                 self.throttle +=1
@@ -268,7 +271,7 @@ class TopologicalNavLoc(object):
             pass
             
 
-    def publishTopics(self, wpstr, closest_dist, cnstr, closest_edge_ids, closest_edge_dists) :
+    def publishTopics(self, wpstr, closest_dist, closest_pose, cnstr, closest_edge_ids, closest_edge_dists) :
         
         def pub_closest_edges(closest_edge_ids, closest_edge_dists):
             msg = ClosestEdges()
@@ -276,16 +279,26 @@ class TopologicalNavLoc(object):
             msg.distances = closest_edge_dists
             self.ce_pub.publish(msg)
 
+        def pub_closest_pose(closest_pose):
+            msg = PoseStamped()
+            msg.header.stamp = rospy.Time.now()
+            msg.header.frame_id = self.tmap_frame
+            msg.pose = message_converter.convert_dictionary_to_ros_message("geometry_msgs/Pose", closest_pose)
+            self.wpose_pub.publish(msg)
+
+
         if len(set(closest_edge_dists)) == 1:
             closest_edge_ids.sort()
         
         if self.only_latched :
             if self.wpstr != wpstr:
                 self.wp_pub.publish(wpstr)
+                pub_closest_pose(closest_pose)
             if self.cnstr != cnstr:
                 self.cn_pub.publish(cnstr)
         else:
             self.wp_pub.publish(wpstr)
+            pub_closest_pose(closest_pose)
             self.cn_pub.publish(cnstr)
 
         self.wd_pub.publish(closest_dist)
