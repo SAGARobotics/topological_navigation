@@ -271,13 +271,7 @@ class TopologicalNavLoc(object):
             pass
             
 
-    def publishTopics(self, wpstr, closest_dist, closest_pose, cnstr, closest_edge_ids, closest_edge_dists) :
-        
-        def pub_closest_edges(closest_edge_ids, closest_edge_dists):
-            msg = ClosestEdges()
-            msg.edge_ids = closest_edge_ids
-            msg.distances = closest_edge_dists
-            self.ce_pub.publish(msg)
+    def publishTopics(self, wpstr, closest_dist, closest_pose, cnstr, closest_edge_ids, closest_edge_dists):
 
         def pub_closest_pose(closest_pose):
             msg = PoseStamped()
@@ -285,6 +279,12 @@ class TopologicalNavLoc(object):
             msg.header.frame_id = self.tmap_frame
             msg.pose = message_converter.convert_dictionary_to_ros_message("geometry_msgs/Pose", closest_pose)
             self.wpose_pub.publish(msg)
+
+        def pub_closest_edges(closest_edge_ids, closest_edge_dists):
+            msg = ClosestEdges()
+            msg.edge_ids = closest_edge_ids
+            msg.distances = closest_edge_dists
+            self.ce_pub.publish(msg)
 
 
         if len(set(closest_edge_dists)) == 1:
