@@ -4,6 +4,7 @@ bool add_close_nodes   # Set to true to connect to nodes which are in close prox
 bool add_previous_node # connecting this node to previously added node
 string action          # action of edges connecting this node to close nodes and previous added node (default move_base)
 string action_type     # action type of edges connecting this node to close nodes and previous added node (default move_base_msgs/MoveBaseGoal)
+bool one_way           # one way connection from previous node to this node if `add_previous_node` else bi-directional
 ---
 bool success
 string message         # node name
