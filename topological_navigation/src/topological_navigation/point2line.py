@@ -21,11 +21,16 @@ def pnt2line(pnt, start, end):
     t[np.where(t > 1.0)[0]] = 1.0
     
     nearest = scale(line_vec, t)
-    return distance(nearest, pnt_vec)
+    dist = distance(nearest, pnt_vec)
+
+    nearest = add(nearest, start)
+    nearest = np.vstack((nearest[0], nearest[1], nearest[2]))
+
+    return (dist, nearest)
 
 
 def vector(b, e):
-    return b[0]-e[0], b[1]-e[1], b[2]-e[2]
+    return e[0]-b[0], e[1]-b[1], e[2]-b[2]
 
 
 def unit(v):
@@ -47,6 +52,12 @@ def dot(v, w):
 
 def distance(p0, p1):
     return length(vector(p0, p1))
+
+
+def add(v,w):
+    x,y,z = v[0],v[1],v[2]
+    X,Y,Z = w[0],w[1],w[2]
+    return (x+X, y+Y, z+Z)
 ###################################################################################################################
 
 
