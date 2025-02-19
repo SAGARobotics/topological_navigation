@@ -1386,7 +1386,7 @@ class map_manager_2(object):
     def add_topological_nodes(self, data, update=True, write_map=True):
 
         for item in data:
-            success = self.add_topological_node(item.name, item.pose, False, False, "", "", update=False, write_map=False)
+            success = self.add_topological_node(item.name, item.pose, False, False, "", "", False, update=False, write_map=False)
             if not success:
                 return False
 
