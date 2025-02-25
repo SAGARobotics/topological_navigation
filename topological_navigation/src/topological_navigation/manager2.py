@@ -103,7 +103,7 @@ class map_manager_2(object):
         self.set_meta()
 
         self.map_pub = rospy.Publisher('/topological_map_2', std_msgs.msg.String, latch=True, queue_size=1) 
-        self.map_pub.publish(std_msgs.msg.String(json.dumps(self.tmap2)))
+        self.map_pub.publish(std_msgs.msg.String(json.dumps(self.tmap2, default=str)))
         self.names = self.create_list_of_nodes()
         
         self.broadcaster = tf2_ros.StaticTransformBroadcaster()
