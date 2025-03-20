@@ -132,7 +132,14 @@ class TopologicalNavLoc(object):
         rospy.Subscriber('topological_map_2', String, self.MapCallback)
 
         rospy.loginfo("Localisation waiting for the Topological Map...")
-        rospy.wait_for_message("/topological_map_2", String)
+        tmap_received = False
+        while not tmap_received:
+            try:
+                rospy.wait_for_message('topological_map_2', String, 10.0)
+                tmap_received = True
+            except rospy.ROSException:
+                rospy.loginfo("Localisation waiting for the Topological Map...")
+
         while not self.rec_map :
             rospy.sleep(rospy.Duration.from_sec(0.1))
 
