@@ -25,6 +25,7 @@ class TopologicalTransformPublisher(object):
         rospy.Subscriber('topological_map_2', String, self.map_callback)
 
         rospy.loginfo("Transform Publisher waiting for the Topological Map...")
+        rospy.wait_for_message("/topological_map_2", String)
         while not self.rec_map :
             rospy.sleep(rospy.Duration.from_sec(0.1))
 
