@@ -22,7 +22,7 @@ class TopologicalTransformPublisher(object):
 
         self.broadcaster = tf2_ros.StaticTransformBroadcaster()
 
-        rospy.Subscriber('topological_map_2', String, self.map_callback)
+        rospy.Subscriber('topological_map_2', String, self.map_callback, buff_size=10000000)
 
         rospy.loginfo("Transform Publisher waiting for the Topological Map...")
         while not self.rec_map :
