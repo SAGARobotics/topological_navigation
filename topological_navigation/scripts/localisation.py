@@ -21,7 +21,7 @@ class LocaliseByTopicSubscriber(object):
     thread.
     """
     def __init__(self, topic, callback, callback_args):
-        
+
         self.topic = rospy.get_namespace() + topic
         self.callback = callback
         self.callback_args = callback_args
@@ -52,7 +52,7 @@ class LocaliseByTopicSubscriber(object):
                     return topic_type, real_topic, msg_eval
                 else:
                     rostopic._sleep(10.) # Change! Waiting for 10 seconds instead of 0.1 to reduce load
-                    
+
         return None, None, None
 
 
@@ -83,28 +83,28 @@ class LocaliseByTopicSubscriber(object):
 
     def close(self):
         self.sub.unregister()
-        
+
 
     def __del__(self):
         self.close()
-###################################################################################################################    
+###################################################################################################################
 
 
-###################################################################################################################    
+###################################################################################################################
 class TopologicalNavLoc(object):
 
 
     def __init__(self, name, wtags):
-        
+
         self.throttle_val = rospy.get_param("~LocalisationThrottle", 3)
         self.only_latched = rospy.get_param("~OnlyLatched", True)
-        
+
         self.throttle = self.throttle_val
         self.node="Unknown"
         self.wpstr="Unknown"
         self.cnstr="Unknown"
         self.node_poses = {}
-        
+
         # TODO: remove Temporary arg until tags functionality is MongoDB independent
         self.with_tags = wtags
 
@@ -129,22 +129,22 @@ class TopologicalNavLoc(object):
         self.get_tagged_srv=rospy.Service('topological_localisation/get_nodes_with_tag', topological_navigation_msgs.srv.GetTaggedNodes, self.get_nodes_wtag_cb)
         self.loc_pos_srv=rospy.Service('topological_localisation/localise_pose', topological_navigation_msgs.srv.LocalisePose, self.localise_pose_cb)
 
-        rospy.Subscriber('topological_map_2', String, self.MapCallback)
-            
+        rospy.Subscriber('topological_map_2', String, self.MapCallback, buff_size=10000000)
+
         rospy.loginfo("Localisation waiting for the Topological Map...")
         while not self.rec_map :
             rospy.sleep(rospy.Duration.from_sec(0.1))
-        
+
         self.base_frame = rospy.get_param("~base_frame", "base_link")
-        
+
         rospy.loginfo("Listening to the tf transform between {} and {}".format(self.tmap_frame, self.base_frame))
         self.listener = tf.TransformListener()
         self.rate = rospy.Rate(10.0)
         self.PoseCallback()
-        
+
         rospy.spin()
 
-    
+
     def get_distances_to_pose(self, pose):
         """
         This function returns the distance from each waypoint to a pose in an organised way
@@ -156,11 +156,11 @@ class TopologicalNavLoc(object):
             a["node"] = node
             a["dist"] = dist
             distances.append(a)
-        
+
         distances = sorted(distances, key=lambda k: k["dist"])
         return distances
-    
-    
+
+
     def get_edge_distances_to_pose(self, pose):
         """
         This function returns the distance from each edge to a pose in an organised way
@@ -176,17 +176,17 @@ class TopologicalNavLoc(object):
             closest_edges = []
             closest_edge_points = []
             distances = np.array([])
-        
+
         return closest_edges, closest_edge_points, np.sort(distances)
-        
+
 
     def PoseCallback(self):
         """
-        This function receives the topo_map to base_link tf transform and localises 
+        This function receives the topo_map to base_link tf transform and localises
         the robot in topological space
         """
         while not rospy.is_shutdown():
-            
+
             try:
                 now = rospy.Time(0)
                 self.listener.waitForTransform(self.tmap_frame, self.base_frame, now, rospy.Duration(2.0))
@@ -195,7 +195,7 @@ class TopologicalNavLoc(object):
                 rospy.logerr(e)
                 self._sleep()
                 continue
-        
+
             msg = Pose()
             msg.position.x = trans[0]
             msg.position.y = trans[1]
@@ -204,20 +204,20 @@ class TopologicalNavLoc(object):
             msg.orientation.y = rot[1]
             msg.orientation.z = rot[2]
             msg.orientation.w = rot[3]
-            
-            self.current_pose = msg            
+
+            self.current_pose = msg
             if(self.throttle%self.throttle_val==0):
                 self.distances =[]
                 self.distances = self.get_distances_to_pose(msg)
                 closeststr='none'
                 currentstr='none'
-                
+
                 closest_edges, closest_edge_points, edge_dists = self.get_edge_distances_to_pose(msg)
                 if len(closest_edges) > 1:
                     closest_edges = closest_edges[:2]
                     closest_edge_points = closest_edge_points[:2]
                     edge_dists = edge_dists[:2]
-                
+
                 not_loc=True
                 if self.loc_by_topic:
                     for i in self.loc_by_topic:
@@ -236,7 +236,7 @@ class TopologicalNavLoc(object):
                                 self.force_check = False
                 else:
                     self.force_check = True
-    
+
                 if not_loc:
                     ind = 0
                     while not_loc and ind<len(self.distances) and ind<3:
@@ -247,7 +247,7 @@ class TopologicalNavLoc(object):
                                 closeststr=currentstr
                                 not_loc=False
                         ind+=1
-                              
+
                     ind = 0
                     not_loc=True
                     # No go nodes and Nodes localisable by topic are ONLY closest node when the robot is within them
@@ -257,7 +257,7 @@ class TopologicalNavLoc(object):
                             closeststr=str(name)
                             not_loc=False
                         ind+=1
-                
+
                 # distance to physically closest node.
                 closest_dist = np.round(self.distances[0]["dist"], 3)
                 closest_pose = self.distances[0]["node"]["node"]["pose"]
@@ -265,16 +265,16 @@ class TopologicalNavLoc(object):
                 self.throttle=1
             else:
                 self.throttle +=1
-                
+
             self._sleep()
-            
+
 
     def _sleep(self):
         try:
             self.rate.sleep()
         except rospy.ROSInterruptException:
             pass
-            
+
 
     def publishTopics(self, wpstr, closest_dist, closest_pose, cnstr, closest_edge_ids, closest_edge_points, closest_edge_dists):
 
@@ -303,7 +303,7 @@ class TopologicalNavLoc(object):
 
         if len(set(closest_edge_dists)) == 1:
             closest_edge_ids.sort()
-        
+
         if self.only_latched :
             if self.wpstr != wpstr:
                 self.wp_pub.publish(wpstr)
@@ -318,10 +318,10 @@ class TopologicalNavLoc(object):
         self.wd_pub.publish(closest_dist)
         pub_closest_edges(closest_edge_ids, closest_edge_dists)
         pub_closest_edge_point(closest_edge_points[0])
-            
+
         self.wpstr = wpstr
         self.cnstr = cnstr
-        
+
 
     def MapCallback(self, msg):
         """
@@ -331,13 +331,13 @@ class TopologicalNavLoc(object):
         self.nodes_by_topic = []
         self.nogos = []
 
-        self.tmap = json.loads(msg.data) 
+        self.tmap = json.loads(msg.data)
         self.tmap_frame = self.tmap["transformation"]["child"]
         rospy.loginfo("Localisation received the Topological Map")
-        
+
         self.get_edge_vectors()
         self.update_loc_by_topic()
-        
+
         # TODO: remove Temporary arg until tags functionality is MongoDB independent
         if self.with_tags:
             self.nogos = self.get_no_go_nodes()
@@ -358,38 +358,38 @@ class TopologicalNavLoc(object):
             ))
             # Calling instance of class to start subsribing thread.
             self.subscribers[-1]()
-        
+
         rospy.loginfo("NODES BY TOPIC: %s" %self.names_by_topic)
         rospy.loginfo("NO GO NODES: %s" %self.nogos)
         self.rec_map = True
-            
-            
+
+
     def get_edge_vectors(self):
-        
+
         node_poses = {}
         for node in self.tmap["nodes"]:
             node_poses[node["node"]["name"]] = node["node"]["pose"]
-        
+
         self.dist_edge_ids = []
         vectors_start = []
         vectors_end = []
-        
+
         for node in self.tmap["nodes"]:
             orig_pose = node_poses[node["node"]["name"]]
             start = [orig_pose["position"]["x"], orig_pose["position"]["y"], 0]
-            
+
             for edge in node["node"]["edges"]:
                 dest_pose = node_poses[edge["node"]]
-                
+
                 if node["node"]["name"] != edge["node"]:
                     self.dist_edge_ids.append(edge["edge_id"])
                     end = [dest_pose["position"]["x"], dest_pose["position"]["y"], 0]
-                    
+
                     vectors_start.append(start)
                     vectors_end.append(end)
                 else:
                     rospy.logerr("Cannot get distance to edge {}: Destination is equal to origin".format(edge["edge_id"]))
-        
+
         self.vectors_start = np.array(vectors_start)
         self.vectors_end = np.array(vectors_end)
 
@@ -420,39 +420,39 @@ class TopologicalNavLoc(object):
 
         if dist>0.10:
             val = getattr(msg, item['field'])
-            
+
             if val == item['val']:
                 if self.persist.has_key(item['name']):
                     if self.persist[item['name']] < item['persistency']:
                         self.persist[item['name']]+=1
                 else:
                     self.persist[item['name']]=0
-                    
+
                 if item['name'] not in [x['name'] for x in self.loc_by_topic] and self.persist[item['name']] < item['persistency']:
                     self.loc_by_topic.append(item)
                     self.previous_pose = self.current_pose
-                    
+
             else:
                 if item['name'] in self.persist:
                     self.persist.pop(item['name'])
-                    
+
                 if item['name'] in [x['name'] for x in self.loc_by_topic]:
                     self.loc_by_topic.remove(item)
                     self.previous_pose = self.current_pose
-                    
+
 
     def get_nodes_wtag_cb(self,req):
-        
+
         tlist = []
         rlist=[]
 
         try:
             rospy.wait_for_service('/topological_map_manager2/get_tagged_nodes', timeout=3)
             cont = rospy.ServiceProxy('/topological_map_manager2/get_tagged_nodes', topological_navigation_msgs.srv.GetTaggedNodes)
-                
+
             resp1 = cont(req.tag)
             tagnodes = resp1.nodes
-            
+
         except (rospy.ServiceException) as e:
             rospy.logerr("Service call failed: %s"%e)
 
@@ -461,7 +461,7 @@ class TopologicalNavLoc(object):
             if i in tagnodes:
                 tlist.append(i)
         rlist.append(tlist)
-        
+
         return rlist
 
 
@@ -491,7 +491,7 @@ class TopologicalNavLoc(object):
                 closeststr=str(name)
                 not_loc=False
             ind+=1
-            
+
         return currentstr, closeststr
 
 
@@ -502,16 +502,16 @@ class TopologicalNavLoc(object):
         try:
             rospy.wait_for_service('/topological_map_manager2/get_tagged_nodes', timeout=3)
             get_prediction = rospy.ServiceProxy('/topological_map_manager2/get_tagged_nodes', topological_navigation_msgs.srv.GetTaggedNodes)
-                
+
             resp1 = get_prediction('no_go')
             return resp1.nodes
-        
+
         except rospy.ServiceException as e:
             rospy.logerr("Service call failed: %s"%e)
 
 
     def point_in_poly(self,node,pose):
-        
+
         x=pose.position.x-node["node"]["pose"]["position"]["x"]
         y=pose.position.y-node["node"]["pose"]["position"]["y"]
 
@@ -531,9 +531,9 @@ class TopologicalNavLoc(object):
                         if p1x == p2x or x <= xints:
                             inside = not inside
             p1x,p1y = p2x,p2y
-            
+
         return inside
-###################################################################################################################        
+###################################################################################################################
 
 
 ###################################################################################################################
@@ -545,4 +545,4 @@ if __name__ == '__main__':
         if '-notags' in sys.argv:
             wtags = False
     server = TopologicalNavLoc(rospy.get_name(), wtags)
-###################################################################################################################    
+###################################################################################################################

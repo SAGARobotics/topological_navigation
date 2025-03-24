@@ -26,7 +26,7 @@ class TopoMapPlotter(object):
         self.nodes = {}
         self.node_names = []
 
-        self.topo_map_sub = rospy.Subscriber("topological_map_2", std_msgs.msg.String, self.topo_map_cb)
+        self.topo_map_sub = rospy.Subscriber("topological_map_2", std_msgs.msg.String, self.topo_map_cb, buff_size=10000000)
         rospy.loginfo("Waiting for topo_map")
         while not self.rec_map:
             rospy.sleep(0.5)

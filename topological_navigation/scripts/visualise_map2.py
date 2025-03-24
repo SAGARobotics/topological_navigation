@@ -41,7 +41,7 @@ class TopoMap2Vis(object):
 
         self.topmap_pub = rospy.Publisher('topological_map_visualisation', MarkerArray, queue_size = 1, latch=True)
         self.routevis_pub = rospy.Publisher('topological_route_visualisation', MarkerArray, queue_size = 1)
-        self.topo_map_sub = rospy.Subscriber("topological_map_2", String, self.topo_map_cb)
+        self.topo_map_sub = rospy.Subscriber("topological_map_2", String, self.topo_map_cb, buff_size=10000000)
         self.topo_route_sub = rospy.Subscriber("topological_navigation/route_remaining", TopologicalRoute, self.route_cb)
 
         rospy.loginfo("Waiting for topo_map")
@@ -72,15 +72,15 @@ class TopoMap2Vis(object):
             self.route_marker.markers.append(self.get_route_marker(msg.nodes[i-1], msg.nodes[i], idn))
             idn+=1
         self.routevis_pub.publish(self.route_marker)
-        
-        
+
+
     def clear_route(self):
         self.route_marker = MarkerArray()
         self.route_marker.markers=[]
         marker = Marker()
         marker.action = marker.DELETEALL
         self.route_marker.markers.append(marker)
-        self.routevis_pub.publish(self.route_marker) 
+        self.routevis_pub.publish(self.route_marker)
         rospy.sleep(0.5)
 
 
@@ -133,7 +133,7 @@ class TopoMap2Vis(object):
                 if marker:
                     self.map_markers.markers.append(marker)
                     idn += 1
-        
+
         if not self.no_goto:
             rospy.sleep(0.5)
             for i in self.topological_map['nodes']:
@@ -202,7 +202,7 @@ class TopoMap2Vis(object):
             self.client.send_goal(navgoal)
             rospy.Timer(rospy.Duration(1.0), self.timer_cb, oneshot=True)    # This is needed so the callback is only triggered once
 
-    
+
     def timer_cb(self, event) :
         self.in_feedback = False
 

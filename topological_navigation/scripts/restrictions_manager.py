@@ -40,7 +40,7 @@ class RestrictionsManager():
         self.restricted_tmap2_pub = rospy.Publisher(
                          "{}_2".format(out_topic), String, queue_size=10,
                          latch=True)
-    
+
     def register_restriction(self, condition_obj):
         """ This method receive a condition implementing AbstractRestriction class that can be evaluated"""
         self.conditions.update({
@@ -51,7 +51,7 @@ class RestrictionsManager():
 
     def register_connections(self):
         rospy.Subscriber("/topological_map_2",
-                         String, self._topomap_cb)
+                         String, self._topomap_cb, buff_size=10000000)
         rospy.loginfo("Restrictions manager waiting for the Topological Map...")
         while self.topo_map is None:
             rospy.sleep(0.5)
@@ -139,7 +139,7 @@ class RestrictionsManager():
 
         # here we negate because if the restriction matches (True) it means the robot is allowed to pass (not restricted)
         return not restriction_predicate
-        
+
     def restrict_planning_map_handle(self, request):
         response = RestrictMapResponse()
         response.success = True
@@ -149,7 +149,7 @@ class RestrictionsManager():
         response.restricted_tmap = json.dumps(new_topo_map)
 
         return response
-    
+
     def restrict_runtime_map_handle(self, request):
         response = RestrictMapResponse()
         response.success = True
@@ -163,7 +163,7 @@ class RestrictionsManager():
     def evaluate_node_handle(self, request):
         response = EvaluateNodeResponse()
         response.success = True
-    
+
         try:
             robot_state = eval(request.state)
         except:
@@ -202,7 +202,7 @@ class RestrictionsManager():
                 edge_restrictions = self.edges[request.edge]["restrictions_planning"]
 
             response.evaluation = self._evaluate_restrictions(edge_restrictions, request.edge, robot_state, for_node=False)
-   
+
         return response
 
     def satisfy_runtime_restrictions(self, request):
@@ -236,7 +236,7 @@ class RestrictionsManager():
         except:
             pass
             # rospy.logwarn("Robot state data conversion to dictionary not valid, skip message")
-            # robot_state = None 
+            # robot_state = None
         finally:
             # tmp_topo_map = copy.deepcopy(self.topo_map)
             to_remove_edges = {}
@@ -244,7 +244,7 @@ class RestrictionsManager():
             # for each node, check restrictions
             for i, node in enumerate(self.topo_map["nodes"]):
                 node_restrictions = str(node["node"][restrictions_arg])
-                
+
                 is_restricted = self._evaluate_restrictions(node_restrictions, node["meta"]["node"], robot_state, for_node=True)
 
                 # remove the node if the restriction evaluates as True
@@ -347,7 +347,7 @@ if __name__ == '__main__':
         rospy.logwarn("Config file not provided.")
         pass
     else:
-        # this is the coordinator config file        
+        # this is the coordinator config file
         if os.path.isfile(config_file):
             _config = {}
             with open(config_file, "r") as f_handle:
