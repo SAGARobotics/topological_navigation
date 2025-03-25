@@ -102,15 +102,17 @@ class map_manager_2(object):
 
         self.set_meta()
 
-        self.map_pub = rospy.Publisher('/topological_map_2', std_msgs.msg.String, latch=True, queue_size=1) 
-        self.map_pub.publish(std_msgs.msg.String(json.dumps(self.tmap2, default=str)))
+        self.pub_simple_map = rospy.get_param("~publish_simple_topo_map", True)
+
+        self.map_pub = rospy.Publisher('/topological_map_2', std_msgs.msg.String, latch=True, queue_size=1)
+        self.publish_topological_map()
         self.names = self.create_list_of_nodes()
         
         self.broadcaster = tf2_ros.StaticTransformBroadcaster()
         self.broadcast_transform()
         
-        self.convert_to_legacy = rospy.get_param("~convert_to_legacy", True)
-        if self.tmap2 and self.convert_to_legacy:
+        self.convert_to_legacy = rospy.get_param("~convert_to_legacy", False)
+        if self.tmap2 and self.convert_to_legacy and not self.pub_simple_map:
             self.points_pub = rospy.Publisher('/topological_map', topological_navigation_msgs.msg.TopologicalMap, latch=True, queue_size=1)
             self.tmap2_to_tmap()
             self.points_pub.publish(self.points)
@@ -270,6 +272,38 @@ class map_manager_2(object):
         if self.cache_maps:
             rospy.loginfo("Caching the map...")
             self.write_topological_map(os.path.join(self.cache_dir, os.path.basename(self.filename)))
+
+
+    def publish_topological_map(self):
+
+        tmap_to_pub = copy.deepcopy(self.tmap2)
+
+        if self.pub_simple_map:
+            for node in tmap_to_pub["nodes"]:
+                if "map" in node["meta"]:
+                    del node["meta"]["map"]
+                if "pointset" in node["meta"]:
+                    del node["meta"]["pointset"]
+                if "restrictions_planning" in node["node"]:
+                    del node["node"]["restrictions_planning"]
+                if "restrictions_runtime" in node["node"]:
+                    del node["node"]["restrictions_runtime"]
+
+                for edge in node["node"]["edges"]:
+                    if "fail_policy" in edge:
+                        del edge["fail_policy"]
+                    if "fluid_navigation" in edge:
+                        del edge["fluid_navigation"]
+                    if "goal" in edge:
+                        del edge["goal"]
+                    if "recovery_behaviours_config" in edge:
+                        del edge["recovery_behaviours_config"]
+                    if "restrictions_planning" in edge:
+                        del edge["restrictions_planning"]
+                    if "restrictions_runtime" in edge:
+                        del edge["restrictions_runtime"]
+
+        self.map_pub.publish(std_msgs.msg.String(json.dumps(tmap_to_pub, default=str)))
         
         
     def write_topological_map(self, filename, no_alias=False):
@@ -300,7 +334,7 @@ class map_manager_2(object):
         if update_time:
             self.tmap2["meta"]["last_updated"] = self.get_time()
         
-        self.map_pub.publish(std_msgs.msg.String(json.dumps(self.tmap2)))
+        self.publish_topological_map()
         self.names = self.create_list_of_nodes()
         self.map_check()
         
