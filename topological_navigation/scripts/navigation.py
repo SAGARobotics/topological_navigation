@@ -270,7 +270,7 @@ class TopologicalNavServer(object):
                 for edge in node["node"]["edges"]:
                     if edge["action"] == self.move_base_name:
                         move_base_goal["action_type"] = edge["action_type"]
-                        move_base_goal["goal"] = edge["goal"]
+                        move_base_goal["goal"] = edge["goal"] if "goal" in edge else {}
                         break
                 else:
                     continue
@@ -737,7 +737,7 @@ class TopologicalNavServer(object):
             if rindex < (len(route.edge_id) - 1):
                 nedge = get_edge_from_id_tmap2(self.lnodes, route.source[rindex + 1], route.edge_id[rindex + 1])
                 a1 = nedge["action"]
-                self.fluid_navigation = nedge["fluid_navigation"]
+                self.fluid_navigation = nedge["fluid_navigation"] if "fluid_navigation" in nedge else True
             else:
                 nedge = None
                 a1 = "none"
