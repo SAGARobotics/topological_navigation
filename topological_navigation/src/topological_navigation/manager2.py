@@ -63,7 +63,7 @@ class map_manager_2(object):
         self.name = name
         self.metric_map = metric_map
         self.pointset = pointset
-        self.last_node = None
+        self.last_nodes = []
         
         if transformation == "default":
             self.transformation = {}
@@ -366,6 +366,8 @@ class map_manager_2(object):
         self.update(False)
         self.broadcast_transform()
 
+        self.last_nodes = []
+
         ans = TriggerResponse()
         ans.success = True
         ans.message = "Topomap reloaded from file"
@@ -517,14 +519,16 @@ class map_manager_2(object):
             self.add_edge(name, close_node, action, action_type, edge_id_1, update=False, write_map=False)
             self.add_edge(close_node, name, action, action_type, edge_id_2, update=False, write_map=False)
 
-        if add_previous_node and self.last_node is not None:
-            edge_id_1 = name + "_" + self.last_node
-            edge_id_2 = self.last_node + "_" + name
-            if not one_way:
-                self.add_edge(name, self.last_node, action, action_type, edge_id_1, update=False, write_map=False)
-            self.add_edge(self.last_node, name, action, action_type, edge_id_2, update=False, write_map=False)
+        last_node = self.last_nodes[-1] if self.last_nodes else None
 
-        self.last_node = name
+        if add_previous_node and last_node is not None:
+            edge_id_1 = name + "_" + last_node
+            edge_id_2 = last_node + "_" + name
+            if not one_way:
+                self.add_edge(name, last_node, action, action_type, edge_id_1, update=False, write_map=False)
+            self.add_edge(last_node, name, action, action_type, edge_id_2, update=False, write_map=False)
+
+        self.last_nodes.append(name)
 
         if update:
             self.update()
@@ -741,6 +745,9 @@ class map_manager_2(object):
                 for edge in node["node"]["edges"]:
                     if edge["node"] == node_name:
                         self.remove_edge(edge["edge_id"], False)
+
+            if node_name in self.last_nodes:
+                self.last_nodes.remove(node_name)
             
             if update:
                 self.update()
@@ -855,6 +862,8 @@ class map_manager_2(object):
             the_node["meta"]["node"] = new_name
             the_node["node"]["name"] = new_name
             self.tmap2["nodes"][index] = the_node
+
+            self.last_nodes = list(map(lambda x: new_name if x == node_name else x, self.last_nodes))
             
             if update:
                 self.update()
@@ -1368,7 +1377,7 @@ class map_manager_2(object):
     def clear_nodes(self, update=True, write_map=True):
 
         self.tmap2["nodes"] = []
-        self.last_node = None
+        self.last_nodes = []
 
         if update:
             self.update()
