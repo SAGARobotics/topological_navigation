@@ -18,7 +18,7 @@ import std_msgs.msg
 
 from std_srvs.srv import Trigger, TriggerResponse
 from std_srvs.srv import Empty, EmptyResponse
-from geometry_msgs.msg import Vector3, Quaternion, TransformStamped
+from geometry_msgs.msg import Vector3, Quaternion, TransformStamped, Pose
 
 from rospy_message_converter import message_converter
 from topological_navigation.tmap_utils import get_node_names_from_edge_id_2
@@ -414,13 +414,14 @@ class map_manager_2(object):
         Returns a list of nodes that have a given tag
         """
         res = topological_navigation_msgs.srv.GetTaggedNodesResponse()
-        res.names=[]
+        res.nodes=[]
         res.poses=[]
         for node in self.tmap2["nodes"]:
             if "tag" in node["meta"]:
                 if req.tag in node["meta"]["tag"]:
-                    res.names.append(node["node"]["name"])
-                    res.poses.append(node["node"]["pose"])
+                    pose = message_converter.convert_dictionary_to_ros_message("geometry_msgs/Pose", node["node"]["pose"])
+                    res.nodes.append(node["node"]["name"])
+                    res.poses.append(pose)
         return res
 
 
