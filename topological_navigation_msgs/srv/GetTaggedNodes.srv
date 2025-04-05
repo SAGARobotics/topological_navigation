@@ -1,3 +1,4 @@
 string tag
 ---
 string[] nodes
+geometry_msgs/Pose[] poses
