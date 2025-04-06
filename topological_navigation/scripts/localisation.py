@@ -444,7 +444,9 @@ class TopologicalNavLoc(object):
     def get_nodes_wtag_cb(self,req):
 
         tlist = []
-        rlist=[]
+
+        res = topological_navigation_msgs.srv.GetTaggedNodesResponse()
+        res.nodes=[]
 
         try:
             rospy.wait_for_service('/topological_map_manager2/get_tagged_nodes', timeout=3)
@@ -460,9 +462,10 @@ class TopologicalNavLoc(object):
         for i in ldis:
             if i in tagnodes:
                 tlist.append(i)
-        rlist.append(tlist)
 
-        return rlist
+        res.nodes = tlist
+
+        return res
 
 
     def localise_pose_cb(self, req):
