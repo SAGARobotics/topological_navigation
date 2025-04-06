@@ -94,6 +94,7 @@ class TopologicalNavServer(object):
         ]
 
         self.move_base_actions = rospy.get_param("~move_base_actions", move_base_actions)
+        self.goals = rospy.get_param("topological_navigation_goals", {})
 
         # what service are we using as move_base?
         self.move_base_name = rospy.get_param("~move_base_name", "move_base")
@@ -252,7 +253,7 @@ class TopologicalNavServer(object):
         self.rsearch = TopologicalRouteSearch2(self.lnodes)
         self.route_checker = RouteChecker(self.lnodes)
         self.make_move_base_edge()
-        self.edge_action_manager = EdgeActionManager(self.lnodes)
+        self.edge_action_manager = EdgeActionManager(self.lnodes, self.goals)
 
         self._map_received = True
 
@@ -264,6 +265,9 @@ class TopologicalNavServer(object):
         self.move_base_edge["edge_id"] = "move_base_edge"
 
         move_base_goal = rospy.get_param("~move_base_goal", {})
+        if self.move_base_name in self.goals:
+            move_base_goal["action_type"] = self.goals[self.move_base_name]["action_type"]
+            move_base_goal["goal"] = {} # if move_base_name is in self.goals then the plugin exists
 
         if not move_base_goal:
             for node in self.lnodes["nodes"]:
