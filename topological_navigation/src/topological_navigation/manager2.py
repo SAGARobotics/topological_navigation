@@ -11,6 +11,7 @@ import yaml, json
 import re, uuid, copy, os
 import multiprocessing, rospkg
 from datetime import datetime, timezone
+from numpy import round
 
 from topological_navigation_msgs.msg import *
 import topological_navigation_msgs.srv
@@ -316,6 +317,8 @@ class map_manager_2(object):
         nodes.sort(key=lambda node: node["node"]["name"])
         self.tmap2["nodes"] = nodes
 
+        self.process_floats()
+
         if no_alias:
             rospy.loginfo("Disabling anchors and aliases in topological map yaml ...")
             yml = yaml.dump(self.tmap2, default_flow_style=False, Dumper=NoAliasDumper)
@@ -327,6 +330,30 @@ class map_manager_2(object):
         fh.close
 
         rospy.loginfo("Done")
+
+
+    def process_floats(self):
+
+        def process_float(node_name, field, value):
+            if not isinstance(value, float):
+                try:
+                    value = float(value)
+                except Exception as err:
+                    rospy.logerr("Could not convert {} value {} to float for node {}. Exception is {}".format(field, value, node_name, err))
+            if isinstance(value, float):
+                value = float(round(value, 3))
+            return value
+
+
+        for node in self.tmap2["nodes"]:
+            name = node["node"]["name"]
+            node["node"]["pose"]["position"]["x"] = process_float(name, "position", node["node"]["pose"]["position"]["x"])
+            node["node"]["pose"]["position"]["y"] = process_float(name, "position", node["node"]["pose"]["position"]["y"])
+            node["node"]["pose"]["position"]["z"] = process_float(name, "position", node["node"]["pose"]["position"]["z"])
+
+            for vert in node["node"]["verts"]:
+                vert["x"] = process_float(name, "vert", vert["x"])
+                vert["y"] = process_float(name, "vert", vert["y"])
 
 
     def update(self, update_time=True):
