@@ -6,12 +6,12 @@ Created on Tue Sep 29 16:06:36 2020
 """
 #########################################################################################################
 from __future__ import division
-import rospy, tf2_ros, math
+import rospy, tf, tf2_ros, math
 import yaml, json
 import re, uuid, copy, os
 import multiprocessing, rospkg
 from datetime import datetime, timezone
-from numpy import round
+from numpy import round, arctan2
 
 from topological_navigation_msgs.msg import *
 import topological_navigation_msgs.srv
@@ -22,7 +22,7 @@ from std_srvs.srv import Empty, EmptyResponse
 from geometry_msgs.msg import Vector3, Quaternion, TransformStamped, Pose
 
 from rospy_message_converter import message_converter
-from topological_navigation.tmap_utils import get_node_names_from_edge_id_2
+from topological_navigation.tmap_utils import get_node_from_tmap2, get_node_names_from_edge_id_2
 
 
 def pose_dist(pose1, pose2):
@@ -544,10 +544,12 @@ class map_manager_2(object):
         """
         Adds a node to the topological map
         """
-        return self.add_topological_node(req.name, req.pose, req.add_close_nodes, req.add_previous_node, req.action, req.action_type, req.one_way)
+        return self.add_topological_node(req.name, req.pose, req.add_close_nodes, req.add_previous_node, req.previous_node_name, req.action, req.action_type,
+                                         req.one_way)
 
 
-    def add_topological_node(self, node_name, node_pose, add_close_nodes, add_previous_node, action, action_type, one_way, dist=8.0, update=True, write_map=True):
+    def add_topological_node(self, node_name, node_pose, add_close_nodes, add_previous_node, previous_node_name, action, action_type, one_way, dist=8.0,
+                             update=True, write_map=True):
 
         if node_name:
             name = node_name
@@ -584,8 +586,10 @@ class map_manager_2(object):
             self.add_edge(close_node, name, action, action_type, edge_id_2, update=False, write_map=False)
 
         last_node = self.last_nodes[-1] if self.last_nodes else None
+        last_node = previous_node_name if previous_node_name else last_node
 
         if add_previous_node and last_node is not None:
+            self.set_node_orientation(name, last_node)
             edge_id_1 = name + "_" + last_node
             edge_id_2 = last_node + "_" + name
             if not one_way:
@@ -673,6 +677,26 @@ class map_manager_2(object):
             current_angle += separation_angle
 
         return points
+
+
+    def set_node_orientation(self, new_node_name, last_node_name):
+
+        new_node = get_node_from_tmap2(self.tmap2, new_node_name)
+        last_node = get_node_from_tmap2(self.tmap2, last_node_name)
+
+        if new_node is not None and last_node is not None:
+            dx = new_node["node"]["pose"]["position"]["x"] - last_node["node"]["pose"]["position"]["x"]
+            dy = new_node["node"]["pose"]["position"]["y"] - last_node["node"]["pose"]["position"]["y"]
+
+            angle = tf.transformations.quaternion_from_euler(0.0, 0.0, arctan2(dy, dx))
+
+            for node in self.tmap2["nodes"]:
+                name = node["node"]["name"]
+                if (name == last_node_name) or (name == new_node_name):
+                    node["node"]["pose"]["orientation"]["x"] = float(angle[0])
+                    node["node"]["pose"]["orientation"]["y"] = float(angle[1])
+                    node["node"]["pose"]["orientation"]["z"] = float(angle[2])
+                    node["node"]["pose"]["orientation"]["w"] = float(angle[3])
 
 
     def add_edge_cb(self, req):
@@ -1459,7 +1483,7 @@ class map_manager_2(object):
     def add_topological_nodes(self, data, update=True, write_map=True):
 
         for item in data:
-            success = self.add_topological_node(item.name, item.pose, False, False, "", "", False, update=False, write_map=False)
+            success = self.add_topological_node(item.name, item.pose, False, False, "", "", "", False, update=False, write_map=False)
             if not success:
                 return False
 
