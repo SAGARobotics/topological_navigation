@@ -908,7 +908,8 @@ class TopologicalNavServer(object):
         policy = None
         state = -1
         if len(self.executing_fail_policy) == 0:
-            _policy = [action.strip().split("_") for action in edge["fail_policy"].split(",")]
+            fail_policy = edge["fail_policy"] if "fail_policy" in edge else "fail"
+            _policy = [action.strip().split("_") for action in fail_policy.split(",")]
             policy = []
             # repeat the actions that can be repeated more than once
             for action in _policy:
