@@ -694,12 +694,11 @@ class map_manager_2(object):
             quat = tf.transformations.quaternion_from_euler(0.0, 0.0, angle)
 
             for node in self.tmap2["nodes"]:
-                if node["node"]["name"] == last_node_name:
+                if node["node"]["name"] == last_node_name or node["node"]["name"] == new_node_name:
                     node["node"]["pose"]["orientation"]["x"] = float(quat[0])
                     node["node"]["pose"]["orientation"]["y"] = float(quat[1])
                     node["node"]["pose"]["orientation"]["z"] = float(quat[2])
                     node["node"]["pose"]["orientation"]["w"] = float(quat[3])
-                    break
 
 
     def add_edge_cb(self, req):
