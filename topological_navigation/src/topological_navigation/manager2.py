@@ -544,10 +544,12 @@ class map_manager_2(object):
         """
         Adds a node to the topological map
         """
-        return self.add_topological_node(req.name, req.pose, req.add_close_nodes, req.add_previous_node, req.action, req.action_type, req.one_way)
+        return self.add_topological_node(req.name, req.pose, req.add_close_nodes, req.add_previous_node, req.previous_node_name, req.action, req.action_type,
+                                         req.one_way)
 
 
-    def add_topological_node(self, node_name, node_pose, add_close_nodes, add_previous_node, action, action_type, one_way, dist=8.0, update=True, write_map=True):
+    def add_topological_node(self, node_name, node_pose, add_close_nodes, add_previous_node, previous_node_name, action, action_type, one_way, dist=8.0,
+                             update=True, write_map=True):
 
         if node_name:
             name = node_name
@@ -584,6 +586,7 @@ class map_manager_2(object):
             self.add_edge(close_node, name, action, action_type, edge_id_2, update=False, write_map=False)
 
         last_node = self.last_nodes[-1] if self.last_nodes else None
+        last_node = previous_node_name if previous_node_name else last_node
 
         if add_previous_node and last_node is not None:
             edge_id_1 = name + "_" + last_node
@@ -1459,7 +1462,7 @@ class map_manager_2(object):
     def add_topological_nodes(self, data, update=True, write_map=True):
 
         for item in data:
-            success = self.add_topological_node(item.name, item.pose, False, False, "", "", False, update=False, write_map=False)
+            success = self.add_topological_node(item.name, item.pose, False, False, "", "", "", False, update=False, write_map=False)
             if not success:
                 return False
 
