@@ -685,20 +685,18 @@ class map_manager_2(object):
         last_node = get_node_from_tmap2(self.tmap2, last_node_name)
 
         if new_node is not None and last_node is not None:
-            new_position = new_node["node"]["pose"]["position"]
-            last_position = last_node["node"]["pose"]["position"]
+            dx = new_node["node"]["pose"]["position"]["x"] - last_node["node"]["pose"]["position"]["x"]
+            dy = new_node["node"]["pose"]["position"]["y"] - last_node["node"]["pose"]["position"]["y"]
 
-            dx = new_position["x"] - last_position["x"]
-            dy = new_position["y"] - last_position["y"]
-            angle = arctan2(dy, dx)
-            quat = tf.transformations.quaternion_from_euler(0.0, 0.0, angle)
+            angle = tf.transformations.quaternion_from_euler(0.0, 0.0, arctan2(dy, dx))
 
             for node in self.tmap2["nodes"]:
-                if node["node"]["name"] == last_node_name or node["node"]["name"] == new_node_name:
-                    node["node"]["pose"]["orientation"]["x"] = float(quat[0])
-                    node["node"]["pose"]["orientation"]["y"] = float(quat[1])
-                    node["node"]["pose"]["orientation"]["z"] = float(quat[2])
-                    node["node"]["pose"]["orientation"]["w"] = float(quat[3])
+                name = node["node"]["name"]
+                if (name == last_node_name) or (name == new_node_name):
+                    node["node"]["pose"]["orientation"]["x"] = float(angle[0])
+                    node["node"]["pose"]["orientation"]["y"] = float(angle[1])
+                    node["node"]["pose"]["orientation"]["z"] = float(angle[2])
+                    node["node"]["pose"]["orientation"]["w"] = float(angle[3])
 
 
     def add_edge_cb(self, req):
