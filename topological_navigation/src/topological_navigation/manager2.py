@@ -6,12 +6,12 @@ Created on Tue Sep 29 16:06:36 2020
 """
 #########################################################################################################
 from __future__ import division
-import rospy, tf2_ros, math
+import rospy, tf, tf2_ros, math
 import yaml, json
 import re, uuid, copy, os
 import multiprocessing, rospkg
 from datetime import datetime, timezone
-from numpy import round
+from numpy import round, arctan2
 
 from topological_navigation_msgs.msg import *
 import topological_navigation_msgs.srv
@@ -22,7 +22,7 @@ from std_srvs.srv import Empty, EmptyResponse
 from geometry_msgs.msg import Vector3, Quaternion, TransformStamped, Pose
 
 from rospy_message_converter import message_converter
-from topological_navigation.tmap_utils import get_node_names_from_edge_id_2
+from topological_navigation.tmap_utils import get_node_from_tmap2, get_node_names_from_edge_id_2
 
 
 def pose_dist(pose1, pose2):
@@ -589,6 +589,7 @@ class map_manager_2(object):
         last_node = previous_node_name if previous_node_name else last_node
 
         if add_previous_node and last_node is not None:
+            self.set_node_orientation(name, last_node)
             edge_id_1 = name + "_" + last_node
             edge_id_2 = last_node + "_" + name
             if not one_way:
@@ -676,6 +677,29 @@ class map_manager_2(object):
             current_angle += separation_angle
 
         return points
+
+
+    def set_node_orientation(self, new_node_name, last_node_name):
+
+        new_node = get_node_from_tmap2(self.tmap2, new_node_name)
+        last_node = get_node_from_tmap2(self.tmap2, last_node_name)
+
+        if new_node is not None and last_node is not None:
+            new_position = new_node["node"]["pose"]["position"]
+            last_position = last_node["node"]["pose"]["position"]
+
+            dx = new_position["x"] - last_position["x"]
+            dy = new_position["y"] - last_position["y"]
+            angle = arctan2(dy, dx)
+            quat = tf.transformations.quaternion_from_euler(0.0, 0.0, angle)
+
+            for node in self.tmap2["nodes"]:
+                if node["node"]["name"] == last_node_name:
+                    node["node"]["pose"]["orientation"]["x"] = float(quat[0])
+                    node["node"]["pose"]["orientation"]["y"] = float(quat[1])
+                    node["node"]["pose"]["orientation"]["z"] = float(quat[2])
+                    node["node"]["pose"]["orientation"]["w"] = float(quat[3])
+                    break
 
 
     def add_edge_cb(self, req):
