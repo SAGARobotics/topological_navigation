@@ -53,6 +53,10 @@
   <!-- If True then toponav goals always complete when the robot reaches the goal tolerance even when the action does not complete -->
   <arg name="action_indepedent_goals" default="false"/>
 
+  <!-- Config file that specifies where to retrieve the goal definition and plugin for each action. -->
+  <!--arg name="goals" default="$(find thorvald_navigation_actions)/config/topological_navigation_goals.yaml"/>
+  <rosparam command="load" file="$(arg goals)"/-->
+
   <arg name="launch_extras" default="false" />
 
 

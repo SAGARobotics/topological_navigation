@@ -59,9 +59,10 @@ class dict_tools(object):
 class EdgeActionManager(object):
     
     
-    def __init__(self, topomap):
+    def __init__(self, topomap, goals={}):
         
         self.topomap = topomap
+        self.goals = goals
         self.client = None        
         self.current_action = "none"
         self.next_action = "none"
@@ -70,18 +71,19 @@ class EdgeActionManager(object):
         self.plugins = {}
         for node in self.topomap["nodes"]:
             for edge in node["node"]["edges"]:
-                if edge["action_type"] not in self.plugins:
-                    self.import_plugin(edge["action_type"])
+                if edge["action"] not in self.plugins:
+                    self.import_plugin(edge["action"])
 
 
-    def import_plugin(self, action_type):
+    def import_plugin(self, action):
 
-        package, name = action_type.split("/")
-        try:
+        if action in self.goals:
+            package, name = self.goals[action]["plugin"].split("/")
             func = _import("{}.{}".format(package, name), name)
-            self.plugins[action_type] = func
-        except:
-            pass
+            self.plugins[action] = func
+        else:
+            rospy.logwarn("No goal plugin for action {}. The goal from the map will be used".format(action))
+            self.plugins[action] = None
 
 
     def initialise(self, edge, destination_node, origin_node=None, next_action="none"):
@@ -97,7 +99,11 @@ class EdgeActionManager(object):
         if self.action_name != self.current_action:
             self.preempt()
 
-        action_type = self.edge["action_type"]        
+        if self.action_name in self.goals:
+            action_type = self.goals[self.action_name]["action_type"]
+        else:
+            action_type = self.edge["action_type"]        
+
         items = action_type.split("/")
         package = items[0]
         action_spec = items[1][:-4] + "Action"
@@ -109,9 +115,9 @@ class EdgeActionManager(object):
         self.client = actionlib.SimpleActionClient(self.action_name, action)        
         self.client.wait_for_server()
         
-        if action_type in self.plugins:
+        if self.action_name in self.plugins and self.plugins[self.action_name] is not None:
             rospy.loginfo("Edge Action Manager: Constructing the goal from the plugin")
-            func = self.plugins[action_type]
+            func = self.plugins[self.action_name]
             self.goal = func(action_type, self.get_attributes())
         else:
             rospy.loginfo("Edge Action Manager: Constructing the goal from the map")
