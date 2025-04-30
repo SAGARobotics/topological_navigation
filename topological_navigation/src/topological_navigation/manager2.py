@@ -11,7 +11,7 @@ import yaml, json
 import re, uuid, copy, os
 import multiprocessing, rospkg
 from datetime import datetime, timezone
-from numpy import round, arctan2
+from numpy import round, arctan2, mean
 
 from topological_navigation_msgs.msg import *
 import topological_navigation_msgs.srv
@@ -22,7 +22,7 @@ from std_srvs.srv import Empty, EmptyResponse
 from geometry_msgs.msg import Vector3, Quaternion, TransformStamped, Pose
 
 from rospy_message_converter import message_converter
-from topological_navigation.tmap_utils import get_node_from_tmap2, get_node_names_from_edge_id_2
+from topological_navigation.tmap_utils import get_node_from_tmap2, get_node_names_from_edge_id_2, get_edge_from_id_tmap2
 
 
 def pose_dist(pose1, pose2):
@@ -201,6 +201,7 @@ class map_manager_2(object):
         self.set_influence_zone_srv=rospy.Service('/topological_map_manager2/set_node_influence_zone', topological_navigation_msgs.srv.SetInfluenceZone, self.set_influence_zone_cb)
         self.clear_nodes_srv=rospy.Service('/topological_map_manager2/clear_topological_nodes', Empty, self.clear_nodes_cb)
         self.set_version_srv=rospy.Service('/topological_map_manager2/set_version', topological_navigation_msgs.srv.SetVersion, self.set_version_cb)
+        self.insert_node_srv=rospy.Service('/topological_map_manager2/insert_topological_node', topological_navigation_msgs.srv.InsertNode, self.insert_node_cb)
 
         # Services for modifying the map quickly
         self.add_nodes_srv=rospy.Service('/topological_map_manager2/add_topological_node_multi', topological_navigation_msgs.srv.AddNodeArray, self.add_topological_nodes_cb)
@@ -1597,6 +1598,67 @@ class map_manager_2(object):
         if self.auto_write:
             self.write_topological_map(self.filename)
         return True
+
+
+    def insert_node_cb(self, req):
+        """
+        Inserts a node between the origin and destination of req.edge_id
+        """
+        return self.insert_node(req.edge_id, req.x, req.y)
+
+
+    def insert_node(self, edge_id, x, y, update=True, write_map=True):
+
+        try:
+            origin_name, destination_name = get_node_names_from_edge_id_2(self.tmap2, edge_id)
+
+            edge = get_edge_from_id_tmap2(self.tmap2, origin_name, edge_id)
+            action_name = edge["action"]
+            action_type = edge["action_type"]
+
+            self.remove_edge(edge_id, False, False)
+            self.remove_edge(destination_name + "_" + origin_name, False, False)
+
+            origin = get_node_from_tmap2(self.tmap2, origin_name)
+            destination = get_node_from_tmap2(self.tmap2, destination_name)
+
+            pose = copy.deepcopy(origin["node"]["pose"])
+
+            x1 = origin["node"]["pose"]["position"]["x"]
+            y1 = origin["node"]["pose"]["position"]["y"]
+
+            x2 = destination["node"]["pose"]["position"]["x"]
+            y2 = destination["node"]["pose"]["position"]["y"]
+
+            pose["position"]["x"] = float(mean([x1, x2])) if x == 0.0 else x
+            pose["position"]["y"] = float(mean([y1, y2])) if y == 0.0 else y
+
+            angle = tf.transformations.quaternion_from_euler(0.0, 0.0, arctan2((y2-y1), (x2-x1)))
+
+            pose["orientation"]["x"] = float(angle[0])
+            pose["orientation"]["y"] = float(angle[1])
+            pose["orientation"]["z"] = float(angle[2])
+            pose["orientation"]["w"] = float(angle[3])
+
+            pose_msg = message_converter.convert_dictionary_to_ros_message("geometry_msgs/Pose", pose)
+
+            node_name = self.get_new_name()
+            self.add_topological_node(node_name, pose_msg, False, False, "", "", "", False, False, False)
+
+            self.add_edge(node_name, origin_name, action_name, action_type, node_name+"_"+origin_name, False, False)
+            self.add_edge(origin_name, node_name, action_name, action_type, origin_name+"_"+node_name, False, False)
+            self.add_edge(node_name, destination_name, action_name, action_type, node_name+"_"+destination_name, False, False)
+            self.add_edge(destination_name, node_name, action_name, action_type, destination_name+"_"+node_name, False, False)
+
+            success = True; message = ""
+            if update:
+                self.update()
+            if self.auto_write and write_map:
+                self.write_topological_map(self.filename)
+
+        except Exception as err:
+            success = False; message = str(err)
+        return success, message
 
 
     def get_instances_of_node(self, node_name):

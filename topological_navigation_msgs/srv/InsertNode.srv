@@ -1,0 +1,6 @@
+string edge_id
+float32 x             # Optional x position of inserted node. Default=0.0 meters (mean of origin and destination)
+float32 y             # Optional y position of inserted node. Default=0.0 meters (mean of origin and destination)
+---
+bool success
+string message
