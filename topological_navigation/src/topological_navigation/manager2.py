@@ -1604,10 +1604,10 @@ class map_manager_2(object):
         """
         Inserts a node between the origin and destination of req.edge_id
         """
-        return self.insert_node(req.edge_id, req.x, req.y)
+        return self.insert_node(req.edge_id, req.name, req.x, req.y)
 
 
-    def insert_node(self, edge_id, x, y, update=True, write_map=True):
+    def insert_node(self, edge_id, name, x, y, update=True, write_map=True):
 
         try:
             origin_name, destination_name = get_node_names_from_edge_id_2(self.tmap2, edge_id)
@@ -1642,7 +1642,7 @@ class map_manager_2(object):
 
             pose_msg = message_converter.convert_dictionary_to_ros_message("geometry_msgs/Pose", pose)
 
-            node_name = self.get_new_name()
+            node_name = name if name else self.get_new_name()
             self.add_topological_node(node_name, pose_msg, False, False, "", "", "", False, False, False)
 
             self.add_edge(node_name, origin_name, action_name, action_type, node_name+"_"+origin_name, False, False)
