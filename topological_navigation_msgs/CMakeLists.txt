@@ -83,6 +83,7 @@ add_service_files(
   SetInfluenceZoneArray.srv
   UpdateEdgeConfigArray.srv
   SetVersion.srv
+  InsertNode.srv
 )
 
 
