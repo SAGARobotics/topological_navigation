@@ -1650,7 +1650,7 @@ class map_manager_2(object):
             self.add_edge(node_name, destination_name, action_name, action_type, node_name+"_"+destination_name, False, False)
             self.add_edge(destination_name, node_name, action_name, action_type, destination_name+"_"+node_name, False, False)
 
-            success = True; message = ""
+            success = True; message = node_name
             if update:
                 self.update()
             if self.auto_write and write_map:
