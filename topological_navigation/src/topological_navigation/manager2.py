@@ -446,10 +446,11 @@ class map_manager_2(object):
         res.poses=[]
         for node in self.tmap2["nodes"]:
             if "tag" in node["meta"]:
-                if req.tag in node["meta"]["tag"]:
-                    pose = message_converter.convert_dictionary_to_ros_message("geometry_msgs/Pose", node["node"]["pose"])
-                    res.nodes.append(node["node"]["name"])
-                    res.poses.append(pose)
+                for tag in node["meta"]["tag"]:
+                    if str(tag) == str(req.tag):
+                        pose = message_converter.convert_dictionary_to_ros_message("geometry_msgs/Pose", node["node"]["pose"])
+                        res.nodes.append(node["node"]["name"])
+                        res.poses.append(pose)
         return res
 
 
